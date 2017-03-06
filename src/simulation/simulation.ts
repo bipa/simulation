@@ -1,18 +1,22 @@
 import {Queue} from './queues/queue';
 import {AbstractQueue} from './queues/abstractQueue';
 import {Entity} from './model/entity';
+import {Station} from './model/station';
+import {Route} from './model/route';
 import {Resource} from './model/resource';
 import {PriorityQueue} from './queues/priorityQueue';
 import {Random} from './stats/random';
 import {SimEvent} from './simEvent';
-import {Process} from './process';
+import {Process} from './tasks/process';
 import {Population,DataSeries,TimeSeries,DataRecord} from './stats/stats';
 import {Units,Distributions,Distribution} from './stats/distributions';
 
 
 
 
-const EventEmitter = require('events'); 
+const EventEmitter = require('events');
+
+
 
 
 
@@ -21,7 +25,6 @@ const EventEmitter = require('events');
  
 
 
- 
 
 
 export class Simulation{
@@ -29,25 +32,34 @@ export class Simulation{
 
   simTime:number;
   entities:Set<Entity>;
+
   resources:Resource[];
   processes:Process[];
+  logRecords:any[];
+  stations:Station[];
+  routes:Route[];
+
   queue:PriorityQueue<SimEvent>;
   runtime:any;
   random:Random;
-  logRecords:any[];
   simulationRecords:any[];
   logger:Function;
   reporter
   :Function;
   endTime:number;
+  baseUnit:Units;
   eventEmitter:any;
   data:any;
   eventCount:number;
   unscheduledEvents:Map<number,SimEvent>;
+  concurrentEvents:Promise<SimEvent>[];
+  variables:any;
+  useLogging:boolean;
 
   constructor(model : any) {
-    
+    this.useLogging = model.useLogging || false;
     this.random = new Random(model.preferences.seed);
+    this.baseUnit = model.preferences.baseUnit || Units.Minute;
     this.simTime = 0;
     this.entities = new Set<Entity>();
     this.resources = [];
@@ -62,9 +74,13 @@ export class Simulation{
     this.eventEmitter = new EventEmitter();
     this.eventEmitter.setMaxListeners(100);
     this.data = Object.assign({},model.data);
+    this.variables = {};
+    this.createVariables(model.variables,this);
     this.eventCount = 0;
     this.unscheduledEvents = new Map<number,SimEvent>();
+    this.concurrentEvents = [];
 
+ 
     this.createResources(model.resources);
     this.createProcesses(model.processes);
     this.createEntities(model.entities);
@@ -72,10 +88,11 @@ export class Simulation{
   }
 
 defaultLogger(message){
-    console.log(message);
+    if(this.useLogging)
+        console.log(message);
 }
 
-defaultReporter(message){
+defaultReporter(message){ 
     console.log(message||"");
 }
 
@@ -86,11 +103,12 @@ defaultReporter(message){
 
 scheduleEvent(simEvent:SimEvent,duration,message:string=null){
     simEvent.deliverAt = this.time()+duration;
-    simEvent.scheduledAt = this.time();
+    //simEvent.scheduledAt = this.time();
     simEvent.message = message;
     simEvent.isScheduled = true;
     this.queue.add(simEvent);
     this.unscheduledEvents.delete(simEvent.id);
+    this.concurrentEvents.push(simEvent.promise);
 }
 
 
@@ -106,9 +124,9 @@ setTimer(duration:number=null, type:string = null,message:string=null) : SimEven
         this.unscheduledEvents.set(simEvent.id,simEvent);
     }
 
-   /* let p =  new Promise((resolve,reject)=>{
+    let p =  new Promise<SimEvent>((resolve,reject)=>{
 
-            this.eventEmitter.once("eventActive",(event:SimEvent)=>{
+            this.eventEmitter.once(simEvent.name,(event:SimEvent)=>{
 
                 resolve(event);
 
@@ -116,24 +134,28 @@ setTimer(duration:number=null, type:string = null,message:string=null) : SimEven
 
 
    }).then(e=>{
-       this.endTime.toString();
-   })
+      return simEvent;
+   });
 
    simEvent.promise = p;
-   */
+
+    if(simEvent.isScheduled && simEvent.deliverAt === this.simTime){
+        this.concurrentEvents.push(simEvent.promise);
+    }
 
     return simEvent;
 
 
 }
 
- nextStep(){
+ async nextStep()  {
     
-    
+   
       if(this.queue.size ===0 )
       {
           this.finalize();
-          return true;
+          this.eventEmitter.emit("done", true);
+          return;
       }
       
       
@@ -141,33 +163,49 @@ setTimer(duration:number=null, type:string = null,message:string=null) : SimEven
       this.simTime = event.deliverAt;
       if (event.deliverAt > this.endTime)  {
           this.finalize();
-          return true;
+          this.eventEmitter.emit("done", true);
+          return;
       };
       this.eventCount++;
       this.simTime = event.deliverAt;
       this.log(event.message,event.type);
       //if(this.eventCount>1)
-      //  this.eventEmitter.emit("eventActive", event);
+        this.eventEmitter.emit(event.name, event);
         
       /*this.log(`Count simulation listeners EVENTACTIVE:  ${this.eventEmitter.listenerCount("eventActive")}`,)
       this.log(`Count process listeners QUEUECHANGED:  ${this.processes[0].eventEmitter.listenerCount("queueChanged")}`,)
       this.log(`Count resource listeners IDLE:  ${this.resources[0].emitter.listenerCount("idle")}`,)*/
       
-      event.deliver();
+      //event.deliver();
       
       
       //let res = await event.promise;
-      this.nextStep();
+      if(this.concurrentEvents.length>0){
+            let r   = await Promise.all(this.concurrentEvents);
+            this.concurrentEvents.length = 0;
+            this.nextStep();
 
+      }else{
+          let res = await event.promise;
+          this.nextStep();
+      }
+    
+     
 
 }
-simulate(endTime, maxEvents = Number.POSITIVE_INFINITY ) {
-        // argCheck(arguments, 1, 2);
-    this.eventCount = 0;
-    this.endTime = endTime || this.endTime;
-    this.nextStep();
+simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<boolean> {
+     let promise = new Promise<boolean>(async(resolve,reject)=>{
+         this.eventEmitter.once("done",(success)=>{
+             resolve(success);
+         });
+         this.eventCount = 0;
+         this.endTime = endTime || this.endTime;
+         this.nextStep();
+    })
+return promise;
+  
    
-  }
+}
 
 
 /* simulate(endTime, maxEvents = Number.POSITIVE_INFINITY ) {
@@ -241,7 +279,7 @@ addRandomValue(dist:Distribution){
     //if dist is just a number, following the default scale
    // if(!(dist instanceof Object) && !(parseInt(dist).isNaN())) return dist;
     
-    let scale = this.setTimeScale(dist.unit);
+    let scale = this.setTimeScale(dist.unit  || this.baseUnit);
     let value = null;
     
     switch (dist.type) {
@@ -268,6 +306,7 @@ addRandomValue(dist:Distribution){
     
     
 }
+
 
 
 //Should be put private
@@ -316,19 +355,13 @@ createProcesses(processModels:any[]){
 
 
 
- scheduleNextCreation(entityModel:any){
+ async scheduleNextCreation(entityModel:any){
 
           let createAt = this.addRandomValue(entityModel.creation.dist);
-          let res =  this.setTimer(createAt,"creation",entityModel.name)
-          .done(()=>{
-                 this.createModel(entityModel);
+          this.setTimer(createAt,"creation",entityModel.name).promise.then((simEvent)=>{
+                        this.createModel(entityModel);
 
-         })
-         //.promise;
-        /*  .then(r=>
-            this.createModel(entityModel)
-          )*/
-          ;
+                    })
 }
 
 
@@ -349,7 +382,7 @@ createProcesses(processModels:any[]){
       }
   }
 
-createModel(entityModel){
+async createModel(entityModel){
           
           this.createEntityInstance(entityModel);
           
@@ -358,10 +391,11 @@ createModel(entityModel){
                 if(entityModel.creation.repeatInterval){
                     
                     let repeatInterval = this.addRandomValue(entityModel.creation.repeatInterval);
-                    this.setTimer(repeatInterval,"creation",entityModel.name)
-                        .done(()=>{
-                            this.createModel(entityModel);
-                    });
+                    this.setTimer(repeatInterval,"creation",entityModel.name).promise.then((simEvent)=>{
+                        this.createModel(entityModel);
+                        
+
+                    })
                     
                 }
                 else{
@@ -404,21 +438,20 @@ addEvents(entityModel,modelInstance){
           
            //Should be SET AFTER the creation of an element
             if(entityModel.plannedEvents)
-                entityModel.plannedEvents.forEach( plannedEvent=>{
+                entityModel.plannedEvents.forEach(async  plannedEvent=>{
                     
                     // let plannedEvent = new PlannedEvent(e);
                     // this.model.addPlannedEvent(plannedEvent);
                     plannedEvent.logMessage = plannedEvent.logMessage || plannedEvent.name;
                     let startTime = this.addRandomValue(plannedEvent.dist);
-                    this.setTimer(startTime).done(()=>{
+                    await this.setTimer(startTime).promise
                             this.schedulePlannedEvent(plannedEvent,modelInstance);
-                    });
                     
                     
                 });
             
             if(entityModel.randomEvents)
-                entityModel.randomEvents.forEach( randomEvent=>{
+                entityModel.randomEvents.forEach(async randomEvent=>{
                     
                     // let randomEvent = new RandomEvent(e);
                     // this.model.addRandomEvent(randomEvent);
@@ -429,17 +462,15 @@ addEvents(entityModel,modelInstance){
                         for (var i = 0; i < randomEvent.numberOfRuns; i++) {
                            
                                 next+= this.addRandomValue(randomEvent.dist);
-                                this.setTimer(next).done(()=>{
+                                await this.setTimer(next).promise
                                     this.randomEventOccured(randomEvent,modelInstance);
-                                });
                                 
                         }
                     }
                     else{
                         let startTime = this.addRandomValue(randomEvent.dist);
-                        this.setTimer(startTime).done(()=>{
+                        await this.setTimer(startTime).promise
                                     this.scheduleRandomEvent(randomEvent,modelInstance);
-                                });
                         
                     }
                     
@@ -451,20 +482,19 @@ addEvents(entityModel,modelInstance){
           
       }
       
-    schedulePlannedEvent(plannedEvent,modelInstance){
+   async schedulePlannedEvent(plannedEvent,modelInstance){
             
             
             //Schedule the next plannedEvent
             let repeatInterval = this.addRandomValue(plannedEvent.repeatInterval);
             
-            let res =this.setTimer(repeatInterval).done(()=>{
+            let res =await this.setTimer(repeatInterval).promise
                 
                  this.schedulePlannedEvent(plannedEvent,modelInstance);
                 //Log the execution of the planned event
                 if(plannedEvent.logEvent) this.log(plannedEvent.logMessage);
                 //Execute the planned event
                 plannedEvent.action(modelInstance,this);
-            });
            
             
             
@@ -472,16 +502,14 @@ addEvents(entityModel,modelInstance){
             
         }
         
-       scheduleRandomEvent(randomEvent,modelInstance){
+       async scheduleRandomEvent(randomEvent,modelInstance){
             
             //Schedule the next plannedEvent
             let nextEventAt = this.addRandomValue(randomEvent.dist);
             this.randomEventOccured(randomEvent,modelInstance);
          
-            let res =this.setTimer(nextEventAt).done(()=>{
-                
+            let res =await this.setTimer(nextEventAt).promise;
                     this.scheduleRandomEvent(randomEvent,modelInstance);
-            });
              
             
             
@@ -586,7 +614,54 @@ createResources(resourceModels: any[]){
 
 
 
+ createVariables(variables, ctx){
+                for(let variableName in variables) 
+                {
+                    if(Object.keys(variables[variableName]).length>0)
+                    {
 
+                           this.variables[variableName] = {};
+
+                             for(let subVariableName in variables[variableName]) 
+                             {
+                                 if(variableName=="noLog")
+                                 {
+                                        this.variables[variableName][subVariableName]=
+                                        variables[variableName][subVariableName];
+                                 }
+                                else{
+                                    this.createVariable(this.variables[variableName],
+                                    subVariableName,
+                                    variables[variableName][subVariableName],ctx)
+                                }
+                                
+                             }
+                    }else{
+                              this.createVariable(this.variables,
+                              variableName,
+                              variables[variableName],ctx)
+                     }
+
+                   
+                }
+        }
+
+
+        createVariable(obj,propName, initValue,ctx){
+                let vValue=initValue;
+                 Object.defineProperty(
+                     obj
+                     ,propName
+                     ,{
+                          get: function() { return vValue; },
+                     set: function(value) {
+                         vValue = value;
+                         ctx.simulationRecords.push(
+                             new SimulationRecord( ctx.time(), propName,value)
+                         )}
+                        }
+                )
+        }
 
 
 
@@ -617,7 +692,17 @@ createResources(resourceModels: any[]){
 
 
 
+export class SimulationRecord{
+    simTime:number;
+    name:string;
+    value:number;
 
+    constructor(simTime:number,name:string,value:number){
+        this.simTime = simTime;
+        this.name= name;
+        this.value = value;
+    }
+}
 
 
 

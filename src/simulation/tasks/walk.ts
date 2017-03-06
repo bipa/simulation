@@ -1,7 +1,7 @@
 
 
-import { SimEvent } from '../simEvent.1';
-import { Simulation } from '../simulation.1';
+import { SimEvent } from '../simEvent';
+import { Simulation } from '../simulation';
 import { Station } from '../model/station';
 import { Entity } from '../model/entity';
 

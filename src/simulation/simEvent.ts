@@ -5,10 +5,12 @@
 
 export class SimEvent{
 
+
+
     deliverAt:number;
     scheduledAt:number;
     cancelled:boolean;
-    //promise:Promise<any>
+    promise:Promise<any>
     type: string;
     message:string;
     id:number;
@@ -16,6 +18,7 @@ export class SimEvent{
     callbacks:Function[]
     static count:number = 0;
     result : any;
+    name:string;
 
 
     constructor(scheduledAt:number, deliverAt:number,type:string,message:string){
@@ -27,11 +30,10 @@ export class SimEvent{
         this.type=type;
         this.message = message;
         this.id= SimEvent.count;
+        this.name  = "event"+this.id;
         SimEvent.count ++;
         this.callbacks = [];
     }
-
-
 
 
     deliver(){

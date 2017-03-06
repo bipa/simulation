@@ -1,17 +1,17 @@
-import { Queue, QueueTypes } from './queues/queue';
-import { FifoQueue } from './queues/fifoQueue';
-import { AbstractQueue } from './queues/abstractQueue';
-import { Entity} from './model/entity';
-import { Resource, ResourceStates } from './model/resource';
-import { Simulation } from './simulation';
-import { Distribution } from './stats/distributions';
-import { SimEvent } from './simEvent';
+import { Queue, QueueTypes } from '../queues/queue';
+import { FifoQueue } from '../queues/fifoQueue';
+import { AbstractQueue } from '../queues/abstractQueue';
+import { Entity } from '../model/entity';
+import { Resource, ResourceStates } from '../model/resource';
+import { Simulation } from '../simulation';
+import { Distribution } from '../stats/distributions';
+import { SimEvent } from '../simEvent';
 
- 
+
 let EventEmitter = require('events');
 
 
-export class Process {
+export class Process { 
 
 
     queue: AbstractQueue<Entity>;
@@ -20,7 +20,6 @@ export class Process {
     numberOfResourcesToSeize: number;
     simulation: Simulation;
     name: string;
-    innerProcess : Function;
     constructor(simulation: Simulation, processModel: any, 
         resources: Array<Resource> = null, numberOfResourcesToSeize = 1, queueType: QueueTypes = QueueTypes.fifo) {
         switch (queueType) {
@@ -37,24 +36,12 @@ export class Process {
         this.eventEmitter.setMaxListeners(100);
         this.resources = resources || new Array<Resource>();
         this.simulation = simulation;
-
-        this.innerProcess = processModel.process || null;
-
     }
+    async seize(entity: Entity, resource: Resource = null): Promise<SimEvent> {
 
 
-    process(entity: Entity, resource: Resource = null) {
 
-        if(this.innerProcess)
-        {
-            this.innerProcess(entity, resource);
-        }
-
-    }
-
-
-    seize(entity: Entity, resource: Resource = null): SimEvent {
-
+           
 
 
             if (resource && !this.resources.find(r => { return r.name === resource.name })) {
@@ -68,51 +55,78 @@ export class Process {
             let simEvent = this.simulation.setTimer();
             simEvent.type="seize";
             simEvent.result = seizeResult;
-            if (this.queue.length == 1) {
-                this.seizeFromResources(entity, simEvent);
-
+            if (this.queue.length == 1) {    
+                let idleResources = this.resources.filter(r => { return r.state === ResourceStates.idle });
+                if (idleResources && idleResources.length > 0) {
+                    let resource = this.resources[0];
+                    let sResult =   this.inner_seize(entity,resource,simEvent);
+                    simEvent.result  = sResult;
+            }
+            else {
+                this.resources.forEach(r => {
+                r.emitter.once("idle", resource => {
+                    if (!simEvent.isScheduled) {
+                          let sResult =   this.inner_seize(entity,resource,simEvent);
+                          simEvent.result  = sResult;
+                    }
+            });
+                });
+            }
             }
             else {
                 //Listen for the one time the entity is in front....then seize
-                this.eventEmitter.once(entity.name, () => {
-                    this.seizeFromResources(entity, simEvent);
+                this.eventEmitter.once(entity.name, async () => {
+                    
+                    let sResult = await this.seizeFromResources(entity, simEvent);
+                    simEvent.result  = sResult;
 
                 })
             }
+ 
 
-
-        return simEvent;
-
+            return simEvent.promise;
 
     }
 
 
-    seizeFromResources(entity: Entity, simEvent: SimEvent){
-        let idleResources = this.resources.filter(r => { return r.state === ResourceStates.idle });
-        if (idleResources && idleResources.length > 0) {
-                let resource = this.resources[0];
-                resource.seize(entity);
-                simEvent.result = new SeizeResult(entity, resource);
-                this.simulation.scheduleEvent(simEvent, 0, `${entity.name} seized by ${this.resources[0].name}`);
-                this.dequeue();
-        }
-        else {
-            this.resources.forEach(r => {
-              return  this.inner_seize(entity, r, simEvent);
-            });
-        }
-    }
+    seizeFromResources(entity: Entity, simEvent: SimEvent) : Promise<SeizeResult>{
 
-    inner_seize(entity: Entity, r: Resource, simEvent: SimEvent)  {
-        r.emitter.once("idle", resource => {
-            if (!simEvent.isScheduled) {
-                resource.seize(entity);
-                simEvent.result = new SeizeResult(entity, resource);
-                this.simulation.scheduleEvent(simEvent, 0, `${entity.name} seized by ${this.resources[0].name}`);
-                this.dequeue();
-  
+        let promise = new Promise<SeizeResult>((resolve,reject)=>{
+
+
+
+
+            let idleResources = this.resources.filter(r => { return r.state === ResourceStates.idle });
+            if (idleResources && idleResources.length > 0) {
+                    let resource = this.resources[0];
+                    let sResult =   this.inner_seize(entity,resource,simEvent);
+                    resolve(sResult);
             }
-        });
+            else {
+                this.resources.forEach(r => {
+                r.emitter.once("idle", resource => {
+                    if (!simEvent.isScheduled) {
+                          let sResult =   this.inner_seize(entity,resource,simEvent);
+                          resolve(sResult);
+                    }
+            });
+                });
+            }
+
+
+        })
+
+        return promise;
+
+
+    }
+
+    inner_seize(entity: Entity, resource: Resource, simEvent: SimEvent) :SeizeResult {
+                resource.seize(entity);
+                simEvent.result = new SeizeResult(entity, resource);
+                this.simulation.scheduleEvent(simEvent, 0, `${this.resources[0].name} seized by ${entity.name}, now start processing`);
+                this.dequeue();
+                return simEvent.result;
     }
 
 
@@ -165,9 +179,9 @@ export class Process {
         return promise
     }*/
 
-    delay(entity: Entity, resource: Resource, delay: Distribution): SimEvent {
-        let processTime = this.simulation.addRandomValue(delay)
-        return this.simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`);
+    process(entity: Entity, resource: Resource, processTimeDist: Distribution): Promise<SimEvent> {
+        let processTime = this.simulation.addRandomValue(processTimeDist)
+        return this.simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`).promise;
     }
 
 

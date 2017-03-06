@@ -13,10 +13,18 @@ let constants  :any                        = {}; //don't remove this line
 
 
 data.partArrivalDist = {type:Distributions.Exponential, param1:5}
-data.machineProcessTime = {type:Distributions.Triangular, param1:3,param2:5,param3:7.5}
+data.machineProcessTime = {type:Distributions.Exponential, param1:3}
+
+
+
+
+let variables : any                         = {}; //don't remove this line - declaration
+variables.kpi                      = {}; //don't remove this line - declaration
+variables.kpi.queueLength = 0;
 
 let model = {
     data:data,
+    variables:variables,
     processes:getProcesses(),
     resources:getResources(),
     entities:getEntities(),
@@ -26,7 +34,7 @@ let model = {
 
 };
 
-
+ 
 
 
 
@@ -39,18 +47,20 @@ function getEntities(){
             name:"part",
             creation:{
                 dist:data.partArrivalDist,
-                onCreateModel:(part,ctx:Simulation)=>{
+                onCreateModel:async (part,ctx:Simulation)=>{
 
                     
-                let simEvent =  ctx.runtime.processPart.seize(part,ctx.runtime.machine).done(()=>{
-                      ctx.runtime.processPart.process(part,simEvent.result.resource,ctx.data.machineProcessTime).done(()=>{
-                         ctx.runtime.processPart.release(part,simEvent.result.resource)
-                         ctx.dispose(part);
-                  
-                  });
-                  
-                });
+
+                    let simEvent = await ctx.runtime.processPart.seize(part,ctx.runtime.machine);
+
+                    await ctx.runtime.processPart.delay(part,simEvent.result.resource,ctx.data.machineProcessTime);                
                 
+                    ctx.runtime.processPart.release(part,simEvent.result.resource);
+                    
+                    ctx.dispose(part);
+                  
+
+
                 }            
             }
         }
@@ -88,7 +98,9 @@ function getResources(){
 function getPreferences() {
 
     return {
-        seed:1234
+        seed:1234,
+        simTime:20000,
+        useLogging:false
     }
 
 
@@ -96,5 +108,13 @@ function getPreferences() {
 }
 
 
-let simulation = new Simulation(model);
-simulation.simulate(1000);
+async function simulate(){
+    
+    let simulation = new Simulation(model);
+    await simulation.simulate();
+    let i =0;
+
+}
+
+
+simulate();
