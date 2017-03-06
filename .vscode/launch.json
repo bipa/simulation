@@ -1,0 +1,63 @@
+{
+    // Use IntelliSense to find out which attributes exist for node debugging
+    // Use hover for the description of the existing attributes
+    // For further information visit https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "demo",
+            "program": "${workspaceRoot}/src/simulation/demo.ts",
+            "cwd": "${workspaceRoot}",
+            "outFiles":["${workspaceRoot}/server/**/*.js"],
+            "skipFiles": [
+                        "node_modules/**/*.js",
+                        "<node_internals>/**/*.js"
+            ]
+        }, 
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "demo1",
+            "program": "${workspaceRoot}/src/simulation/demo.1.ts",
+            "cwd": "${workspaceRoot}",
+            "outFiles":["${workspaceRoot}/server/**/*.js"],
+            "skipFiles": [
+                        "node_modules/**/*.js",
+                        "<node_internals>/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "aukraHeimen",
+            "program": "${workspaceRoot}/src/aukraHeimen.js",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "name": "server",
+            "type": "node2",
+            "request": "launch",
+            "program": "${workspaceRoot}\\server.js",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "node2",
+            "request": "attach",
+            "port": 9229
+        },
+        {
+            "name": "compiled",
+            "request": "launch",
+            "type": "node",
+            "program": "${workspaceRoot}/server/simulation/demo.js",
+            "cwd": "${workspaceRoot}",
+            "skipFiles": [
+                        "node_modules/**/*.js",
+                        "<node_internals>/**/*.js"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,48 @@
+@import '~@angular/material/core/theming/theming';
+@import './app/pages/homepage/homepage-theme';
+@import './app/pages/component-sidenav/component-sidenav-theme';
+@import './app/pages/component-viewer/component-viewer-theme';
+@import './app/pages/component-list/component-list-theme';
+@import './app/pages/component-category-list/component-category-list-theme';
+
+@import './styles/typography-theme';
+@import './app/shared/navbar/navbar-theme';
+@import './app/shared/example-viewer/example-viewer-theme';
+@import './app/shared/panel/panel-theme';
+
+// Styles for the docs app that are based on the current theme.
+@mixin material-docs-app-theme($theme) {
+  $primary: map-get($theme, primary);
+  $accent: map-get($theme, accent);
+  $warn: map-get($theme, warn);
+  $background: map-get($theme, background);
+  $foreground: map-get($theme, foreground);
+
+  .docs-app-background {
+    background: md-color($background, background);
+  }
+
+  .docs-primary-header {
+    background: md-color($primary);
+
+    h1 {
+      color: md-color($primary, default-contrast);
+    }
+  }
+
+  .docs-footer {
+    background: md-color($primary);
+    color: md-color($primary, default-contrast);
+  }
+
+  @include docs-site-typography-theme($theme);
+  @include nav-bar-theme($theme);
+  @include component-viewer-sidenav-theme($theme);
+  @include home-page-theme($theme);
+  @include component-viewer-theme($theme);
+  @include component-list-theme($theme);
+  @include component-category-list-theme($theme);
+  @include nav-bar-theme($theme);
+  @include example-viewer-theme($theme);
+  @include panel-theme($theme);
+}

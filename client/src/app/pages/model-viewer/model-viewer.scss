@@ -1,0 +1,43 @@
+
+
+
+
+
+
+model-viewer {
+    box-shadow: 0 2px 2px rgba(0,0,0,0.24), 0 0 2px rgba(0,0,0,0.12);
+      margin: 4px;
+
+    md-toolbar{
+        font-size: 16px;
+        color: rgba(0, 0, 0, 0.54) !important;
+        background: rgba(0, 0, 0, 0.03);
+    }
+    button  {        
+        color: rgba(0, 0, 0, 0.54) !important;
+    }
+.md-Select-value  {        
+        color: rgba(0, 0, 0, 0.54) !important;
+    }
+}
+
+.button-selected{
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.model-viewer-content{
+    overflow: auto;
+}
+
+.drawer{
+    height: 200px;
+    padding:0  0px;
+    background: transparent;
+}
+
+
+
+.drawer-content{
+    height: 100%;
+    background: whitesmoke;
+}

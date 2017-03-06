@@ -1,0 +1,16 @@
+<h1 md-dialog-title>Nytt prosjekt</h1>
+
+<form  (ngSubmit)="doLogin($event)">
+<md-input-container>
+   <input name="name" [(ngModel)]="newItem.name" md-input placeholder="Navn">
+  <!--  <input formControlName="password" type="password" placeholder="Your password">
+  <button type="submit">Log in</button>-->
+</md-input-container>
+   
+</form>
+
+
+<div md-dialog-actions>
+  <button md-button (click)="dialogRef.close(newItem)">OK</button>
+  <button md-button (click)="dialogRef.close()">Avbryt</button>
+</div>

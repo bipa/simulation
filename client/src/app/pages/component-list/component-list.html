@@ -1,0 +1,37 @@
+
+<md-toolbar>
+  <span class="example-spacer"></span>
+    <button mdTooltip="Nytt prosjekt" md-mini-fab (click)="openDialog()"><md-icon>add</md-icon></button>
+</md-toolbar>
+
+<div class="docs-component-list-category">
+
+
+  <md-card
+      *ngFor="let component of projects"
+      class="docs-component-category-list-card"
+      [routerLink]="['/components/component/', component.$key]">
+    <md-card-title>{{component.name}}</md-card-title>
+    <p class="docs-component-category-list-card-summary">{{component.name}}</p>
+    <div  class="docs-component-category-list-card-image"
+         [style.backgroundImage]="'url(\'../../../assets/img/components/' + component.imageName+'\')'">
+    </div>
+  </md-card>
+
+
+
+
+
+
+<!--
+
+  <a *ngFor="let component of category.items"
+      class="docs-component-list-item"
+      [routerLink]="['/components/component/', component.id]">
+    <div class="docs-component-list-item-icon"
+         [attr.aria-label]="component.name"
+         [style.backgroundImage]="'url(\'../../../assets/img/components/' + component.imageName+'\')'">
+    </div>
+    {{component.name}}
+  </a>-->
+</div>

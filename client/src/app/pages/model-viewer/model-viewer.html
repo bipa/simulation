@@ -1,0 +1,167 @@
+
+
+
+<md-toolbar  >
+    <span fxShow="false" style="padding-right: 10px;" fxShow.gt-sm>Valgt scenario:</span>
+     <div  >
+     <md-select style="width: 200px;"  [(ngModel)]="selectedScenario" name="code">
+              <md-option (onSelect)="onSelectedScenarioChanged(scenario)" *ngFor="let scenario of scenarioes" [value]="scenario"> 
+                {{scenario.name}}{{scenario.asterix}}
+              </md-option>
+        </md-select>
+   </div>
+    <div fxFlex></div>
+    <div >
+      <button   md-icon-button type="button" (click)="newScenario()" [mdTooltip]="'Nytt scenario'">
+          <md-icon >
+              add
+          </md-icon>
+      </button> 
+      <button *ngIf="selectedScenario"  md-icon-button type="button" (click)="deleteSelectedScenario()" [mdTooltip]="'Slett scenario'">
+          <md-icon>
+              delete
+          </md-icon>
+      </button>
+    </div>
+  
+</md-toolbar>
+
+
+
+
+<md-toolbar  *ngIf="selectedScenario">
+ <!-- <span>{{simulationProject.selectedScenario.name}}</span>-->
+  <div>  
+    <md-checkbox [mdTooltip]="'Inkluder i simulering'" class="included-checkbox" [(ngModel)]="selectedScenario.isIncludedInSimulation"></md-checkbox>
+  </div>
+    <div fxFlex></div>
+    <div fxShow="false" fxShow.gt-sm>
+       <button [ngClass]="{'button-selected':codeOption.isSelected}" *ngFor="let codeOption of codeOptions"  md-raised-button (click)="onSelectedCodeOption(codeOption)" [mdTooltip]="codeOption.display">
+              {{codeOption.display}}
+       </button>
+    </div>
+   <div  fxHide="false" fxHide.gt-sm >
+     <md-select style="margin:4px 0;" [(ngModel)]="selectedCodeOption" name="code">
+              <md-option (onSelect)="onSelectedCodeOption(codeOption)" *ngFor="let codeOption of codeOptions" [value]="codeOption"> 
+                {{codeOption.display}}
+              </md-option>
+        </md-select>
+   </div>
+    
+</md-toolbar>
+
+<div *ngIf="selectedScenario" fxFlex class="model-viewer-content">
+  <ace-editor
+            [text]="code"
+            [mode]="'javascript'"
+            [theme]="'tomorrow_night_bright'"
+            [options]="options"
+            [readOnly]="false"
+            [autoUpdateContent]="true" 
+            [durationBeforeCallback]="1000" 
+            (textChanged)="onTextChanged($event)"
+            style="min-height: 100%; width:100%; overflow: auto;"
+            >
+          </ace-editor>
+
+</div>
+
+
+<div *ngIf="showDrawer" class="drawer">
+  <div class="drawer-content">
+   
+    <span><b>{{errorMessage}} </b></span>
+  </div>
+
+
+</div>
+ <md-toolbar *ngIf="selectedScenario" >
+
+          <md-icon mdTooltip="Modellen er korrekt" *ngIf="selectedScenario.isValid && !showProgressBar">
+              check
+          </md-icon>
+          <md-icon *ngIf="!selectedScenario.isValid && !showProgressBar" mdTooltip="Modellen har feil">
+              error
+          </md-icon>
+          <span style="margin-left:20px" *ngIf="selectedScenario.isValid">Modellen er gyldig</span>
+      <span style="margin-left:20px" *ngIf="!selectedScenario.isValid"> <b>{{selectedScenario?.error?.type || 'Ikke validert'}}:</b> {{selectedScenario?.error?.message}} </span>
+    <div fxFlex *ngIf="showProgressBar">
+        <MdProgressSpinner
+          class="progress-bar"
+          [attr.color]="'primary'"
+          [mode]="'query'"
+          [value]="value">
+      </MdProgressSpinner>
+    </div>
+    <div fxFlex ></div>
+     
+    
+    <button *ngIf="showDrawer" (click)="closeDrawer()" class="send-button" md-raised-button>Lukk</button>
+    
+    <button *ngIf="selectedScenario.isDirty || !selectedScenario.isValid" class="send-button" (click)="send()" md-raised-button>Save</button>
+    
+    </md-toolbar>
+
+
+
+
+
+
+<!--<div class="model-toolbar">
+
+
+<div *ngIf="showDrawer" class="drawer">
+  <div class="drawer-content"></div>
+
+
+</div>
+ <md-toolbar  >
+    <div fxFlex></div>
+    
+    <button *ngIf="showDrawer" (click)="closeDrawer()" class="send-button" md-raised-button>Lukk</button>
+    
+    <button class="send-button" (click)="send()" md-raised-button>Send</button>
+    
+    </md-toolbar>
+
+
+</div>
+ 
+<div fxFlex  class="model-view">
+
+  <model-panel  showCollapseButton="{{showCollapseButton}}"  title="{{selectedCode.name}}">
+
+ <right-button-group fxShow="false" fxShow.gt-sm > 
+        <button *ngFor="let codeOption of codeOptions"  md-raised-button (click)="selectedCode=codeOption" [mdTooltip]="'Vis felleskode'">
+              {{codeOption.name}}
+            </button>
+    </right-button-group>
+
+<left-button-group fxHide="false" fxHide.gt-sm > 
+         <md-select style="margin:4px 0" [(ngModel)]="selectedCode" name="code">
+              <md-option *ngFor="let codeOption of codeOptions" [value]="codeOption"> 
+                {{codeOption.name}}
+              </md-option>
+        </md-select>
+    </left-button-group>
+
+
+
+    <panel-content>   
+          <ace-editor
+            [text]="selectedCode.code"
+            [mode]="'javascript'"
+            [theme]="'tomorrow_night_bright'"
+            [options]="options"
+            [readOnly]="false"
+            [autoUpdateContent]="true" 
+            [durationBeforeCallback]="1000" 
+            (textChanged)="onChange($event)"
+            style="min-height: 100%; width:100%; overflow: auto;"
+            >
+          </ace-editor>
+    </panel-content>  
+     
+    </model-panel>
+</div>
+-->

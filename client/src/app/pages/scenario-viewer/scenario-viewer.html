@@ -1,0 +1,218 @@
+
+
+
+
+
+
+
+<md-toolbar class="scenario-toolbar" >
+     <button md-icon-button type="button" 
+    (click)="run(selectedScenario)" [mdTooltip]="'Kjør simulering'">
+                <md-icon>play_circle_outline</md-icon>
+    </button>
+<button md-icon-button type="button" 
+    (click)="pause(selectedScenario)" [mdTooltip]="'Pause simulering'">
+                <md-icon>pause_circle_outline</md-icon>
+    </button>
+<button md-icon-button type="button" 
+    (click)="stop(selectedScenario)" [mdTooltip]="'Stopp simulering'">
+                <md-icon>stop</md-icon>
+    </button>
+  
+  <div style="padding-top: 5px">
+        <span *ngIf="simState!=0">Tid: {{this.simTime}}</span>
+        <span *ngIf="simState==3"> ferdig</span>
+        <span *ngIf="simState==1"> pauset</span>
+        <span *ngIf="simState==4"> stoppet</span>
+
+    </div>
+
+   <div fxFlex></div>
+    <span>Speed: </span>
+    <md-slider style="margin-right: 15px;" max="100" min="0" [value]="delay"></md-slider>
+    
+    <span style="margin-right: 5px;">Skala:</span>
+    <input  mdInput style="width: 50px;margin-right: 15px;" type="number" placeholder="Tick interval" [(ngModel)]="speed">
+    
+   
+      <span fxShow="false" style="padding-right: 10px;" fxShow.gt-sm>Hoved scenario:</span>
+     <div  >
+     <md-select style="width: 200px;"  [(ngModel)]="selectedScenario" name="code">
+              <md-option (onSelect)="onSelectedScenarioChanged(scenario)" *ngFor="let scenario of scenarioes" [value]="scenario"> 
+                {{scenario.name}}
+              </md-option>
+        </md-select>
+   </div>
+</md-toolbar>
+
+
+
+
+  
+
+
+
+
+ <div  fxLayout="column" class="scenario-content">
+
+   
+     <div fxFlex="30%" fxLayout="row"  style="margin:0 2px;" >
+                    <model-panel fxFlex fxFlex.gt-sm="70%" title="Resultat">
+                        <right-button-group>
+                            <button id="dragHandle" class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
+                                <md-icon id="dragHandle" class="drag-handle">
+                                    drag_handle
+                                </md-icon>
+                            </button> 
+                            <button class="close-button" md-icon-button type="button" (click)="closePanel('result')" [mdTooltip]="'Lukk vindu'">
+                                <md-icon>
+                                    close
+                                </md-icon>
+                            </button>
+                        </right-button-group>
+                        <panel-content>
+                             <ngx-datatable 
+                                    #myResultTable
+                                    class='material expandable'
+                                    [columnMode]="'force'"
+                                    [headerHeight]="30"
+                                    [footerHeight]="0"
+                                    [rowHeight]="30"
+                                    [scrollbarV]="true"
+                                    [scrollbarH]="true"
+                                    [rows]='rows'>
+                                 
+                                 
+                                   
+                                   
+                                    <ngx-datatable-column    [frozenLeft]="true"  name="Variabel" maxWidth="200">
+                                    <template let-row="row" ngx-datatable-cell-template>
+                                        <strong>{{row.name}}</strong>
+                                    </template>
+                                    </ngx-datatable-column>
+                                    <ngx-datatable-column  width="100" *ngFor="let scenario of scenarioes" name="{{scenario.name}}" >
+                                    <template let-row="row" ngx-datatable-cell-template>
+                                       <div style="text-align: center"><strong>{{row[scenario.name]}}</strong></div> 
+                                    </template>
+                                    </ngx-datatable-column>                                  
+                                </ngx-datatable>
+                        </panel-content>
+                    </model-panel>
+                     <model-panel  fxFlex fxFlex.gt-sm="30%"  title="Logg">
+                        <right-button-group>
+                            <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
+                                <md-icon>
+                                    drag_handle
+                                </md-icon>
+                            </button> 
+                            <button class="close-button" md-icon-button type="button" (click)="closePanel('log')" [mdTooltip]="'Lukk vindu'">
+                                <md-icon>
+                                    close
+                                </md-icon>
+                            </button>
+                        </right-button-group>
+                        <panel-content>
+                                  <ngx-datatable
+                                    #myTable
+                                    class='material expandable'
+                                    [columnMode]="'standard'"
+                                    [headerHeight]="30"
+                                    [footerHeight]="0"
+                                    [rowHeight]="30"
+                                    [scrollbarV]="true"
+                                    [scrollbarH]="true"
+                                    [rows]='selectedScenario?.runtimeModel?.logs'>
+                                    <!-- Row Detail Template -->
+                                    <ngx-datatable-row-detail [rowHeight]="150" #myDetailRow (toggle)="onDetailToggle($event)">
+                                    <template  let-row="row" ngx-datatable-row-detail-template>
+                                       <div *ngFor="let logItem of row.logItems" fxLayout="row">
+                                            <div  fxFlex="38.39px"></div>
+                                            <span style="padding:0.5rem 1.6em;"  fxFlex="100px">{{logItem.simTime}}</span>
+                                            <span style="padding:0.5rem 1.4em;" fxFlex >{{logItem.message}}</span>
+                                       </div>
+                                    </template>
+                                    </ngx-datatable-row-detail>
+                                    <!-- Column Templates -->
+                                    <ngx-datatable-column
+                                    [width]="20"
+                                    [resizeable]="false"
+                                    [sortable]="false"
+                                    [draggable]="false"
+                                    [canAutoResize]="false">
+                                    <template let-row="row" ngx-datatable-cell-template>
+                                        <a
+                                        [class.icon-right]="!row.$$expanded"
+                                        [class.icon-down]="row.$$expanded"
+                                        title="Expand/Collapse Row"
+                                        (click)="toggleExpandRow(row)">
+                                        </a>
+                                    </template>
+                                    </ngx-datatable-column >
+                                    <ngx-datatable-column name="Tid" width="100">
+                                    <template let-row="row" ngx-datatable-cell-template>
+                                        <strong>{{row.simTime}}</strong>
+                                    </template>
+                                    </ngx-datatable-column>
+                                    <ngx-datatable-column name="Event" >
+                                    <template let-row="row" ngx-datatable-cell-template>
+                                        <strong>{{row.name}}</strong>
+                                    </template>
+                                    </ngx-datatable-column>
+                                    <ngx-datatable-column name="Comment"width="200" >
+                                    <template let-row="row" ngx-datatable-cell-template>
+                                        <strong>{{row.message}}</strong>
+                                    </template>
+                                    </ngx-datatable-column>
+                                </ngx-datatable>
+                        </panel-content>
+                    </model-panel>
+     </div>
+     <div fxFlex="70%" fxLayout="row"  style="margin:0 2px;" >
+                    <model-panel   fxFlex fxFlex.gt-sm="60%"  title="Grafer">
+                        <right-button-group>
+                            <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
+                                <md-icon>
+                                    drag_handle
+                                </md-icon>
+                            </button> 
+                            <button class="close-button" md-icon-button type="button" (click)="closePanel('graphs')" [mdTooltip]="'Lukk vindu'">
+                                <md-icon>
+                                    close
+                                </md-icon>
+                            </button>
+                        </right-button-group>
+                        <panel-content>
+                              <!-- <div  id="testc"></div>-->
+                         
+                           <!-- <div *ngFor="let chart of simulation.selectedScenario.model.charts" id="{{chart.id}}"></div>-->
+                            <zingchart *ngFor="let chart of charts" [chart]="chart"></zingchart>
+                        </panel-content>
+                    </model-panel>
+
+                    <model-panel  fxFlex fxFlex.gt-sm="40%"  title="Animasjon">
+                        <right-button-group>
+                            <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
+                                <md-icon>
+                                    drag_handle
+                                </md-icon>
+                            </button> 
+                            <button class="close-button" md-icon-button type="button" (click)="closePanel('animation')" [mdTooltip]="'Lukk vindu'">
+                                <md-icon>
+                                    close
+                                </md-icon>
+                            </button>
+                        </right-button-group>
+                        <panel-content>
+                            <div class="animation-canvas">
+                                <div class="background" ></div>
+                            </div>
+                        </panel-content>
+                    </model-panel>
+
+
+
+     </div>
+    
+    
+
+    </div>

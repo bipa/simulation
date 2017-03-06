@@ -1,0 +1,36 @@
+<!-- TODO(jelbourn): turn this into nav tabs -->
+<!--<md-tab-group selectedIndex="{{selectedIndex}}" fxFlex class="docs-component-viewer-tabbed-content">
+  <md-tab  label="SIMULERING">
+    <scenario-viewer  class="scenario-viewer" fxFlex fxLayout="column" >
+    </scenario-viewer>
+  </md-tab>
+
+  <md-tab class="modell" label="SCENARIOER">
+    <model-viewer  fxFlex fxLayout="column"  
+        class="docs-component-view-text-content"></model-viewer>
+  </md-tab>
+
+  <md-tab label="INNSTILLINGER">
+
+    <settings-viewer fxFlex ></settings-viewer>
+
+  </md-tab>
+</md-tab-group>
+-->
+
+
+
+  <nav md-tab-nav-bar aria-label="project links">
+    <a md-tab-link
+       *ngFor="let tabLink of tabLinks; let i = index"
+       [routerLink]="tabLink.link"
+       [active]="activeLinkIndex === i"
+       (click)="activeLinkIndex = i">
+      {{tabLink.label}}
+    </a>
+  </nav>
+  <div class="project-wrapper">
+
+  <router-outlet></router-outlet>
+
+  </div>

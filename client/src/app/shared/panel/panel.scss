@@ -1,0 +1,60 @@
+/*:host {
+  display: block;
+}*/
+
+model-panel{
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+ position: relative;
+  background: whitesmoke;
+  margin: 2px;
+}
+
+
+panel-content{
+  
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.title{
+  margin-left:20px;
+}
+.docs-example-viewer-wrapper {
+  h3 {
+    margin-top: 10px;
+  }
+
+flex-grow: 1;
+}
+
+.docs-example-viewer-title {
+  align-content: center;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  //padding: 8px 20px;
+}
+
+.docs-example-viewer-title-spacer {
+  flex: 1 1 auto;
+  margin-left: 10px;
+}
+
+
+
+.docs-example-viewer-body{
+  
+  overflow: auto;
+  position: relative;
+ 
+  position: absolute;
+  top: 44px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}

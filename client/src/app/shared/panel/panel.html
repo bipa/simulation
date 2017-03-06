@@ -1,0 +1,48 @@
+<div  class="docs-example-viewer-wrapper">
+  <div   class="docs-example-viewer-title">
+  <span class="title">{{title}}</span>
+    <div class="docs-example-viewer-title-spacer"></div>
+
+    <ng-content select="left-button-group"></ng-content>
+    
+    <button *ngIf="showCollapseButton" md-icon-button type="button" (click)="toggleIsCollapsed()"
+            [mdTooltip]="'Detaljer entiteter'">
+      <md-icon>
+        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fit="" preserveAspectRatio="xMidYMid meet" focusable="false">
+          <path fill="none" d="M0 0h24v24H0V0z"></path>
+          <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"></path>
+        </svg>
+      </md-icon>
+    </button>
+
+
+    <ng-content select="right-button-group"></ng-content>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+ <!-- <div class="docs-example-viewer-source" *ngIf="showSource">
+    <md-tab-group>
+      <md-tab *ngFor="let extension of ['HTML', 'TS', 'CSS']" [label]="extension">
+        <pre class="docs-example-source"><doc-viewer
+            [documentUrl]="exampleFileUrl(extension)"></doc-viewer></pre>
+      </md-tab>
+    </md-tab-group>
+  </div>
+-->
+
+
+
+  <div class="docs-example-viewer-body" [style.min-height.px]="minHeight" *ngIf="!isCollapsed">
+      <ng-content select="panel-content"></ng-content>
+  </div>
+  
+</div>

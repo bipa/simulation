@@ -1,0 +1,25 @@
+:host {
+  display: block;
+}
+
+.docs-example-viewer-wrapper {
+  h3 {
+    margin-top: 10px;
+  }
+}
+
+.docs-example-viewer-title {
+  align-content: center;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: 8px 20px;
+}
+
+.docs-example-viewer-title-spacer {
+  flex: 1 1 auto;
+}
+
+.docs-example-viewer-body {
+  padding: 30px;
+}
