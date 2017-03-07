@@ -1,6 +1,6 @@
 import {Queue} from './queue';
 import {Simulation} from '../simulation';
-import {Population,PopulationRecord} from '../stats/stats';
+import {Population,PopulationRecord} from '../stats/dataRecorder';
 
 
 export class AbstractQueue<T>{

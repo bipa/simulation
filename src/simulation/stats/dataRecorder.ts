@@ -1,4 +1,5 @@
 import {Simulation} from '../simulation';
+import {DataRecord} from './DataRecord';
 
 
 export class PopulationRecord{
@@ -7,21 +8,6 @@ export class PopulationRecord{
   durationRecord:DataRecord;
 }
 
-export class DataRecord{
-
-    count:number;
-    range :  number;
-    sum : number;
-    sumWeighted: number;
-    max:number;
-    min:number;
-    average:number;
-    variance:number;
-    deviation:number;
-
-
-
-} 
 
 
 

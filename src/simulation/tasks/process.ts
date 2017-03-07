@@ -2,6 +2,7 @@ import { Queue, QueueTypes } from '../queues/queue';
 import { FifoQueue } from '../queues/fifoQueue';
 import { AbstractQueue } from '../queues/abstractQueue';
 import { Entity } from '../model/entity';
+import { Allocations } from '../model/allocations';
 import { Resource, ResourceStates } from '../model/resource';
 import { Simulation } from '../simulation';
 import { Distribution } from '../stats/distributions';
@@ -20,6 +21,7 @@ export class Process {
     numberOfResourcesToSeize: number;
     simulation: Simulation;
     name: string;
+    allocation : Allocations;
     constructor(simulation: Simulation, processModel: any, 
         resources: Array<Resource> = null, numberOfResourcesToSeize = 1, queueType: QueueTypes = QueueTypes.fifo) {
         switch (queueType) {
@@ -30,6 +32,7 @@ export class Process {
                 this.queue = new FifoQueue<Entity>(simulation);
                 break;
         }
+        this.allocation = processModel.allocation || Allocations.valueAdded;
         this.name = processModel.name;
         this.numberOfResourcesToSeize = numberOfResourcesToSeize;
         this.eventEmitter = new EventEmitter();
@@ -132,6 +135,7 @@ export class Process {
 
     enqueue(entity: Entity) {
         this.queue.enqueue(entity);
+        entity.runtime.enqueueTime = this.simulation.simTime;
         this.simulation.log(`${entity.name} enqueued`, "enqueue")
 
         this.eventEmitter.emit("enqueued")
@@ -140,6 +144,7 @@ export class Process {
 
     dequeue() {
         let entity = this.queue.dequeue();
+        this.simulation.recordEntityStat(entity,entity.runtime.enqueueTime,Allocations.wait);
         this.simulation.log(`${entity.name} dequeued`, "dequeue")
         if (this.queue.length > 0) {
             let nextEntity = this.queue.peek();
@@ -154,34 +159,16 @@ export class Process {
     }
 
 
-   /* trySeizeFromMany(entity: Entity, resources: Resource[]): Promise<SeizeResult> {
-        let promises: Promise<SeizeResult>[] = [];
-        resources.forEach(resource => {
-            let p = this.trySeize(entity, resource);
-            promises.push(p);
+
+    delay(entity: Entity, resource: Resource, processTimeDist: Distribution): Promise<SimEvent> {
+        let processTime = this.simulation.addRandomValue(processTimeDist);
+        let timeStampBefore = this.simulation.simTime;
+        let simEvent =  this.simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`);
+               
+        this.simulation.eventEmitter.once(simEvent.name,sEvent=>{
+            this.simulation.recordEntityStat(entity,timeStampBefore,this.allocation);
         });
-        return Promise.race(promises);
-    }
-
-
-
-    trySeize(entity, resource: Resource): Promise<SeizeResult> {
-        let promise = new Promise((resolve, reject) => {
-            if (resource.state === ResourceStates.idle) {
-                resolve(new SeizeResult(entity, [resource]));
-            } else {
-                resource.emitter.once("idle", resource => {
-                    resolve(new SeizeResult(entity, [resource]));
-                });
-            }
-
-        })
-        return promise
-    }*/
-
-    process(entity: Entity, resource: Resource, processTimeDist: Distribution): Promise<SimEvent> {
-        let processTime = this.simulation.addRandomValue(processTimeDist)
-        return this.simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`).promise;
+        return simEvent.promise
     }
 
 
@@ -197,7 +184,7 @@ export class Process {
         this.queue.finalize();
     }
 
-
+  
 
 }
 

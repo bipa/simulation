@@ -14,6 +14,10 @@ export class Entity{
     duration:number =0;
     transferTime:number=0;
     valueAddedTime:number =0;
+    nonValueAddedTime:number =0;
+    waitTime:number = 0;
+    otherTime:number = 0;
+    runtime :any = {};
 
     name:string;
     emitter:any;
@@ -24,12 +28,7 @@ export class Entity{
     constructor(entityModel:any){
         this.type = entityModel.type;
         this.speed = entityModel.speed;
-        if(entityModel.name){
-            this.name = entityModel.name+Entity.count;
-        }
-        else{
-            this.name = entityModel.name || entityModel.type+Entity.count;
-        }
+        this.name = entityModel.name || entityModel.type+Entity.count;
         
             Entity.count++;
             this.emitter = new EventEmitter();

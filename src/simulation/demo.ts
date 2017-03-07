@@ -44,14 +44,13 @@ function getEntities(){
 
         {
             type:"part",
-            name:"part",
             creation:{
                 dist:data.partArrivalDist,
                 onCreateModel:async (part,ctx:Simulation)=>{
 
                     
 
-                    let simEvent = await ctx.runtime.processPart.seize(part,ctx.runtime.machine);
+                    let simEvent = await ctx.runtime.processPart.seize(part,ctx.runtime.worker1);
 
                     await ctx.runtime.processPart.delay(part,simEvent.result.resource,ctx.data.machineProcessTime);                
                 
@@ -83,9 +82,13 @@ function getResources(){
     return [
 
         {
-            type:"machine",
-            name:"machine1",
-            quantity:1, 
+            type:"worker",
+            name:"worker1"
+        },
+        
+        {
+            type:"worker2",
+            quantity:10
         }
 
     ]
@@ -112,7 +115,8 @@ async function simulate(){
     
     let simulation = new Simulation(model);
     await simulation.simulate();
-    let i =0;
+    simulation.report();
+    
 
 }
 

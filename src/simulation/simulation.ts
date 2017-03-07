@@ -8,8 +8,15 @@ import {PriorityQueue} from './queues/priorityQueue';
 import {Random} from './stats/random';
 import {SimEvent} from './simEvent';
 import {Process} from './tasks/process';
-import {Population,DataSeries,TimeSeries,DataRecord} from './stats/stats';
+import {Population,DataSeries,TimeSeries} from './stats/dataRecorder';
+import {DataRecord} from './stats/dataRecord';
 import {Units,Distributions,Distribution} from './stats/distributions';
+import {Statistics} from './stats/statistics';
+import {EntityStats} from './stats/entityStats';
+import {ResourceStats} from './stats/resourceStats';
+import {QueueStats} from './stats/queueStats';
+import { Allocations } from './model/allocations';
+import { Reporter } from './services/reporter';
 
 
 
@@ -32,20 +39,19 @@ export class Simulation{
 
   simTime:number;
   entities:Set<Entity>;
-
+  entityModels: Map<string,any>;
   resources:Resource[];
-  processes:Process[];
+  processes:Map<string,Process>;
   logRecords:any[];
   stations:Station[];
   routes:Route[];
-
+  stats:Statistics;
   queue:PriorityQueue<SimEvent>;
   runtime:any;
   random:Random;
   simulationRecords:any[];
   logger:Function;
-  reporter
-  :Function;
+  reporter:Reporter;
   endTime:number;
   baseUnit:Units;
   eventEmitter:any;
@@ -55,6 +61,7 @@ export class Simulation{
   concurrentEvents:Promise<SimEvent>[];
   variables:any;
   useLogging:boolean;
+  statistics:Statistics;
 
   constructor(model : any) {
     this.useLogging = model.useLogging || false;
@@ -64,13 +71,13 @@ export class Simulation{
     this.entities = new Set<Entity>();
     this.resources = [];
     this.endTime = model.preferences.simTime || 1000;
-    this.processes = [];
+    this.processes = new Map<string,Process>();
     this.queue = new PriorityQueue<SimEvent>((queueItem1,queueItem2)=>  { return queueItem1.deliverAt < queueItem2.deliverAt });
     this.runtime={};
     this.logRecords =[];
     this.simulationRecords = [];
     this.logger = this.defaultLogger;
-    this.reporter = this.defaultReporter;
+    this.reporter = new Reporter();
     this.eventEmitter = new EventEmitter();
     this.eventEmitter.setMaxListeners(100);
     this.data = Object.assign({},model.data);
@@ -79,8 +86,9 @@ export class Simulation{
     this.eventCount = 0;
     this.unscheduledEvents = new Map<number,SimEvent>();
     this.concurrentEvents = [];
-
+    this.statistics = new Statistics();
  
+    this.entityModels = new Map<string,any>();
     this.createResources(model.resources);
     this.createProcesses(model.processes);
     this.createEntities(model.entities);
@@ -92,8 +100,8 @@ defaultLogger(message){
         console.log(message);
 }
 
-defaultReporter(message){ 
-    console.log(message||"");
+report(){
+    this.reporter.report(this);
 }
 
 
@@ -208,50 +216,23 @@ return promise;
 }
 
 
-/* simulate(endTime, maxEvents = Number.POSITIVE_INFINITY ) {
-        // argCheck(arguments, 1, 2);
-    let events = 0;
-    this.endTime = endTime || this.endTime;
-
-    while (true) {  // eslint-disable-line no-constant-condition
-      events++;
-      if (events > maxEvents) return false;
-
-      if(this.queue.size ===0 ) break;
-            // Get the earliest event
-      const ro = this.queue.poll();
-
-          
-            // Uh oh.. we are out of time now
-      if (ro.deliverAt > this.endTime) break;
-
-            // Advance simulation time
-      this.simTime = ro.deliverAt;
-
-            // If this event is already cancelled, ignore
-     // if (ro.cancelled) {ro.reject(this); continue;}
-
-      this.eventEmitter.emit("eventActive", ro);
-    }
-
-    this.finalize();
-    return true;
-  }
-*/
-
  finalize() {
 
-
+    //WIP
     this.entities.forEach(entity=>{
         if (entity.finalize) {
           entity.finalize();
+      }
+      let entityModel = this.entityModels.get(entity.type);
+      if(entityModel.recordWip){
+          this.recordEntityStats(entity);
       }
     });
 
 
     this.processes.forEach(p=>{
         p.finalize();
-        this.reportProcess(p);
+       // this.reportProcess(p);
     });
   }
 
@@ -262,12 +243,18 @@ dispose(entity:Entity){
   
     //keep some stats here
     entity.dispose(this.time());
-    this.runtime[entity.type].dispose(entity);
+    this.entityStats(entity).countStats.leave(entity.timeEntered,this.simTime);
+    this.entityStats(entity).totalTime.record(entity.timeLeft  - entity.timeEntered);
+    this.recordEntityStats(entity);
+                
     this.entities.delete(entity);
 }
 
 
 
+entityStats(entity : Entity) : EntityStats{
+    return this.statistics.entityStats.get(entity.type);
+}
 
 
   
@@ -334,11 +321,14 @@ createProcesses(processModels:any[]){
   processModels.forEach(processModel=>{
       let process = new Process(this,processModel);
       this.runtime[processModel.name] = process;
-      this.processes.push(process);
+      this.processes.set(process.name,process);
   });
 }
 
-
+process(name : string):Process{
+    let process =  this.processes.get(name);
+    return process;
+}
 
  
 
@@ -346,7 +336,8 @@ createProcesses(processModels:any[]){
 
   createEntities(entityModels:any[]){
     entityModels.forEach(entityModel=>{
-      this.runtime[entityModel.type] = new EntityStats();
+        this.entityModels.set(entityModel.type,entityModel);
+      this.statistics.entityStats.set(entityModel.type,new EntityStats(entityModel.type));
       this.setConventions(entityModel);
       this.scheduleNextCreation(entityModel);
     })
@@ -394,6 +385,7 @@ async createModel(entityModel){
                     this.setTimer(repeatInterval,"creation",entityModel.name).promise.then((simEvent)=>{
                         this.createModel(entityModel);
                         
+                        
 
                     })
                     
@@ -428,6 +420,8 @@ createEntityInstance(entityModel){
 createSingleItem(entityModel) : Entity{
                  let entityInstance = new Entity(entityModel);
                   this.addEvents(entityModel,entityInstance);
+                  this.entityStats(entityInstance).countStats.enter(this.simTime);
+                  entityInstance.timeEntered = this.simTime;
                   if(entityModel.creation.onCreateModel) entityModel.creation.onCreateModel(entityInstance,this);
                 return entityInstance;
             }
@@ -546,71 +540,31 @@ log(message:string,type:string=null, entity:Entity=null){
     this.logger(`${this.simTime.toFixed(3)}${entityMsg}   ${message}`);
 }
 
-reportRecord(heading:string =null ,statRecord: DataRecord=null ){
-    if(heading)
-    {
-        this.reporter(heading);
-        this.reporter();
-    }
-
-    if(statRecord)
-    {
-        
-        this.reporter(`         Antall       : ${statRecord.count.toFixed(2)}`);
-        this.reporter(`         Gjennomsnitt : ${statRecord.average.toFixed(2)}`);
-        this.reporter(`         Max          : ${statRecord.max.toFixed(2)}`);
-        this.reporter(`         Min          : ${statRecord.min.toFixed(2)}`);
-        this.reporter(`         Variance     : ${statRecord.variance.toFixed(2)}`);
-        this.reporter(`         Deviation    : ${statRecord.deviation.toFixed(2)}`);
-        this.reporter(`         Sum          : ${statRecord.sum.toFixed(2)}`);
-        this.reporter(`         Sum weighted : ${statRecord.sumWeighted.toFixed(2)}`);
-    }
-}
-
-report(){
-    this.processes.forEach(process=>{
-        this.reportProcess(process);
-    })
-}
-
-reportProcess(process:Process){
-    let processQueue = process.queue;
-
-    this.reportRecord(processQueue.name);
-
-    this.reportQueue(processQueue);
-
-
-
-}
-
-reportQueue(queue:AbstractQueue<Entity>){
-
-    let recs = queue.report();
-
-    this.reporter(`     Antall kommet           : ${queue.countEntered}`);
-    this.reporter(`     Antall dratt            : ${queue.countLeft}`);
-    this.reporter(`     Antall i kø nå          : ${queue.current}`);
-
-this.reportRecord("     Køens lengde            :",recs.sizeRecord);
-this.reporter();
-this.reportRecord("     Tid i køen              :",recs.durationRecord);
-}
-
 
 
 
 createResources(resourceModels: any[]){
     resourceModels.forEach(resourceModel=>{
-            let resource = new Resource(resourceModel);
-            this.resources.push(resource);
-            if(resourceModel.quantity===1){
-                this.runtime[resourceModel.type] = resource;
-            };
+
+            let instanceCount = resourceModel.quantity || 1;
+            for(let i =0;i<instanceCount;i++){
+                    let resource = new Resource(resourceModel);  
+                   
+                    this.resources.push(resource);
+                    if(instanceCount===1){
+                        this.runtime[resource.name] = resource;
+                    };
+            }
+            this.statistics.resourceStats.set(resourceModel.type,new ResourceStats(resourceModel.type));
+            
+            
     });
 }
 
-
+resource(name : string) : Resource{
+    let r = this.resources.find(r=>{return r.name === name});
+    return r;
+}
 
 
 
@@ -665,11 +619,44 @@ createResources(resourceModels: any[]){
 
 
 
+  recordEntityStat(entity:Entity,timeStampBefore : number,allocation : Allocations = Allocations.valueAdded){
 
+        switch (allocation) {
+            case Allocations.valueAdded:
+                entity.valueAddedTime += this.simTime - timeStampBefore;
+                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
+                break;
+            case Allocations.wait:
+                entity.waitTime += this.simTime - timeStampBefore;
+                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
+                break;
+            case Allocations.nonValueAdded:
+                entity.nonValueAddedTime += this.simTime - timeStampBefore;
+                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
+                break;
+            case Allocations.transfer:
+                entity.transferTime += this.simTime - timeStampBefore;
+                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
+                break;
+            case Allocations.other:
+                entity.otherTime += this.simTime - timeStampBefore;
+                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
+                break;
+        
+            default:
+                break;
+        }
 
+    }
 
-
-
+recordEntityStats(entity : Entity){
+    
+    this.entityStats(entity).nonValueAddedTime.record(entity.nonValueAddedTime);
+    this.entityStats(entity).waitTime.record(entity.waitTime);
+    this.entityStats(entity).transferTime.record(entity.transferTime);
+    this.entityStats(entity).valueAddedTime.record(entity.valueAddedTime);
+    this.entityStats(entity).otherTime.record(entity.otherTime);
+}
 
 
 
@@ -714,44 +701,3 @@ export class SimulationRecord{
 
 
 
-
-
-
-
-
-
-export class EntityStats {
-
-    count:number;
-    disposed:number;
-    inProgress:number;
-    averageTimeInSystem:number;
-    maxTimeInSystem:number;
-    minTimeInSystem:number;
-
-
-    constructor(){
-          this.count=0;
-          this.disposed=0;
-          this.inProgress=0;
-          this.maxTimeInSystem =0;
-          this.minTimeInSystem =0;
-          this.averageTimeInSystem =0;
-    }
-
-
-    dispose(entity:Entity){
-      this.disposed++;
-      this.averageTimeInSystem = (this.averageTimeInSystem*(this.disposed-1)+entity.duration)/this.disposed;
-      this.maxTimeInSystem = Math.max(this.maxTimeInSystem,entity.duration);
-      this.minTimeInSystem = Math.min(this.minTimeInSystem,entity.duration);
-      this.inProgress = this.count-this.disposed;
-
-    }
-
-     create(entity:Entity){
-      this.count++;
-      this.inProgress = this.count-this.disposed;
-
-    }
-}
