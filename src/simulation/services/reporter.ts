@@ -96,12 +96,12 @@ reportResources(simulation:Simulation){
             this.reportRecord("Effektiv:    ",resourceStats.instantaneousUtilization.report());
             this.reporter(`         Ideell:    ${resourceStats.scheduledUtilization.toFixed(4)}`);
             this.reporter();
-            this.reporter(`     Total tid:        ${resourceStats.totalScheduledTime}`);
+            this.reporter(`     Total tid:        ${resourceStats.totalScheduledTime.toFixed(0)}`);
             this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.totalScheduledTime).toFixed(2)}`);
             this.reporter(`         Busy:         ${(resourceStats.totalBusyTime/resourceStats.totalScheduledTime).toFixed(2)}`);
             this.reporter(`         Transfer:     ${(resourceStats.totalTransferTime/resourceStats.totalScheduledTime).toFixed(2)}`);
             this.reporter(`         Broken:       ${(resourceStats.totalBrokenTime/resourceStats.totalScheduledTime).toFixed(2)}`);
-            this.reporter(`         Other:        ${(resourceStats.totalIdleTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Other:        ${(resourceStats.totalOtherTime/resourceStats.totalScheduledTime).toFixed(2)}`);
             this.reporter();
 
     });

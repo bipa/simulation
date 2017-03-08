@@ -16,7 +16,9 @@ import {EntityStats} from './stats/entityStats';
 import {ResourceStats} from './stats/resourceStats';
 import {QueueStats} from './stats/queueStats';
 import { Allocations } from './model/allocations';
+
 import { Reporter } from './services/reporter';
+import { Recorder } from './services/recorder';
 
 
 
@@ -51,7 +53,10 @@ export class Simulation{
   random:Random;
   simulationRecords:any[];
   logger:Function;
+
   reporter:Reporter;
+  recorder:Recorder;
+
   endTime:number;
   baseUnit:Units;
   eventEmitter:any;
@@ -77,7 +82,11 @@ export class Simulation{
     this.logRecords =[];
     this.simulationRecords = [];
     this.logger = this.defaultLogger;
+
     this.reporter = new Reporter();
+    this.recorder = new Recorder();
+
+
     this.eventEmitter = new EventEmitter();
     this.eventEmitter.setMaxListeners(100);
     this.data = Object.assign({},model.data);
@@ -247,70 +256,10 @@ return promise;
       }
     });
 
-    this.statistics.resourceStats.forEach(resStat=>{
-    resStat.numberScheduled.record(resStat.currentScheduled,this.simTime-resStat.lastRecordedTime);
-    resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
 
-    if(resStat.currentScheduled===0)
-    {
-         resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
-    
-    }
-    else{
-        resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
-    
-    }
-
-})
+    this.recorder.finalizeResourceRecords(this);
 
 
-this.resources.forEach(resource=>{
-    
-         let resStat =  this.resourceStats(resource);
-         let duration = this.simTime - resource.lastStateChangedTime;
-
-        switch (resource.state) {
-            case ResourceStates.idle:
-                //The resource IS NOT IDLE ANYMORE
-                resource.idleTime+=duration;
-                resStat.totalIdleTime+=duration;
-                break;
-            case ResourceStates.busy:
-                //The resource IS NOT IDLE ANYMORE
-                resource.busyTime+=duration;
-                resStat.totalBusyTime+=duration;
-
-                break;
-            case ResourceStates.transfer:
-                //The resource IS NOT IDLE ANYMORE
-                resource.transferTime+=duration;
-                resStat.totalTransferTime+=duration;
-                break;
-            case ResourceStates.broken:
-                //The resource IS NOT IDLE ANYMORE
-                resource.brokenTime+=duration;
-                resStat.totalBrokenTime+=duration;
-                break;
-            case ResourceStates.seized:
-                //The resource IS NOT IDLE ANYMORE
-                //resource+=this.simTime - resource.lastStateChangedTime;
-                break;
-            case ResourceStates.other:
-                //The resource IS NOT IDLE ANYMORE
-                resource.otherTime+=duration;
-                resStat.totalOtherTime+=duration;
-                break;
-        
-            default:
-                break;
-        }
-        
-        if(resource.scheduledState===ScheduledStates.scheduled)
-        {
-            
-            resStat.totalScheduledTime += this.simTime-resStat.lastScheduledTime;
-        }
-})
 
     this.processes.forEach(p=>{
         p.finalize();
@@ -622,6 +571,9 @@ createResources(resourceModels: any[]){
 
 
 
+
+
+
 addResourceStateListeners(resource:Resource){
     
     resource.emitter.on("onBeforeResourceStateChanged",this.onBeforeResourceStateChanged);
@@ -633,118 +585,36 @@ addResourceStateListeners(resource:Resource){
 
 onResourceBusy=(resource:Resource)=>{
     
-                let resStat =  this.resourceStats(resource);
-                resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
 
-                if(resStat.currentScheduled===0)
-                {
-                    resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
-                
-                }
-                else{
-                    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
-                
-                }
-                resStat.lastRecordedTime = this.simTime;
-                resStat.currentBusy++;
+                this.recorder.onResourceBusy(resource,this);
+
 }
 
 onBeforeResourceStateChanged=(resource:Resource)=>{
     
-         let resStat =  this.resourceStats(resource);
-         let duration = this.simTime - resource.lastStateChangedTime;
 
-        switch (resource.state) {
-            case ResourceStates.idle:
-                //The resource IS NOT IDLE ANYMORE
-                resource.idleTime+=duration;
-                resStat.totalIdleTime+=duration;
-                break;
-            case ResourceStates.busy:
-                //The resource IS NOT IDLE ANYMORE
-                resource.busyTime+=duration;
-                resStat.totalBusyTime+=duration;
-                resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
+        this.recorder.recordBeforeResourceStateChanged(resource,this);
 
-                if(resStat.currentScheduled===0)
-                {
-                    resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
-                
-                }
-                else{
-                    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
-                
-                }
-                resStat.lastRecordedTime = this.simTime;
-                resStat.currentBusy--;
-                break;
-            case ResourceStates.transfer:
-                //The resource IS NOT IDLE ANYMORE
-                resource.transferTime+=duration;
-                resStat.totalTransferTime+=duration;
-                break;
-            case ResourceStates.broken:
-                //The resource IS NOT IDLE ANYMORE
-                resource.brokenTime+=duration;
-                resStat.totalBrokenTime+=duration;
-                break;
-            case ResourceStates.seized:
-                //The resource IS NOT IDLE ANYMORE
-                //resource+=this.simTime - resource.lastStateChangedTime;
-                break;
-            case ResourceStates.other:
-                //The resource IS NOT IDLE ANYMORE
-                resource.otherTime+=duration;
-                resStat.totalOtherTime+=duration;
-                break;
-        
-            default:
-                break;
-        }
-        
-        resource.lastStateChangedTime  = this.simTime;
 }
-
-
-
 
 onUnScheduled = (resource:Resource)=>{
 
-    let resStat =  this.resourceStats(resource);
-    resStat.numberScheduled.record(resStat.currentScheduled,this.simTime-resStat.lastRecordedTime);
-    
-    resStat.totalScheduledTime += this.simTime-resStat.lastScheduledTime;
 
-    resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
-    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
     
-    resStat.lastScheduledTime = this.simTime;
-    resStat.lastRecordedTime = this.simTime;
-    resStat.currentScheduled--;
+                this.recorder.onUnScheduled(resource,this);
 
 
 }
+
+
 onScheduled = (resource:Resource)=>{
-    let resStat =  this.resourceStats(resource);
     
-    resStat.numberScheduled.record(resStat.currentScheduled,this.simTime-resStat.lastRecordedTime);
-    resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
-
-    if(resStat.currentScheduled===0)
-    {
-         resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
-    
-    }
-    else{
-        resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
-    
-    }
-
-    resStat.lastScheduledTime = this.simTime;
-    resStat.lastRecordedTime = this.simTime;
-    resStat.currentScheduled++;
-
+                this.recorder.onScheduled(resource,this);
+   
 }
+
+
+
 
 
 
