@@ -164,7 +164,7 @@ export class Process {
         let processTime = this.simulation.addRandomValue(processTimeDist);
         let timeStampBefore = this.simulation.simTime;
         let simEvent =  this.simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`);
-               
+        resource.process(entity);       
         this.simulation.eventEmitter.once(simEvent.name,sEvent=>{
             this.simulation.recordEntityStat(entity,timeStampBefore,this.allocation);
         });

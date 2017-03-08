@@ -7,12 +7,34 @@ import {DataSeries} from './dataRecorder'
 
 export class ResourceStats extends EntityStats{
 
+    currentScheduled: number = 0;
+    currentBusy: number =0;
+
+
+
+    totalScheduledTime : number = 0;
+    totalBusyTime : number = 0;
+    totalTransferTime : number = 0;
+    totalIdleTime: number =0;
+    totalBrokenTime : number =0 ;
+    totalOtherTime : number = 0;
+
+
+
+
+
+
+
+
+
 
 
     numberBusy:DataSeries;
     numberScheduled:DataSeries;
     instantaneousUtilization:DataSeries;
-    _scheduledUtilization : number;
+
+    lastRecordedTime : number =0;
+    lastScheduledTime : number =0;
 
     constructor(type :string){
         super(type);
@@ -27,14 +49,9 @@ export class ResourceStats extends EntityStats{
 
     get scheduledUtilization() : number {
 
-        if(this._scheduledUtilization) return this._scheduledUtilization;
-        else{
-            let busyRecord  = this.numberBusy.report();
-            let numberScheduledRecord  = this.numberScheduled.report()
+            let busyAverage  = this.numberBusy.average;
+            let numberScheduledAverage  = this.numberScheduled.average;
 
-            this._scheduledUtilization = busyRecord.average/numberScheduledRecord.average; 
-            return this._scheduledUtilization;
-        }
-                
+            return busyAverage/numberScheduledAverage; 
     }
 }

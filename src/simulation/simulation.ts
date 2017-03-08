@@ -3,7 +3,7 @@ import {AbstractQueue} from './queues/abstractQueue';
 import {Entity} from './model/entity';
 import {Station} from './model/station';
 import {Route} from './model/route';
-import {Resource} from './model/resource';
+import {Resource, ResourceStates, ScheduledStates} from './model/resource';
 import {PriorityQueue} from './queues/priorityQueue';
 import {Random} from './stats/random';
 import {SimEvent} from './simEvent';
@@ -102,6 +102,24 @@ defaultLogger(message){
 
 report(){
     this.reporter.report(this);
+}
+
+log(message:string,type:string=null, entity:Entity=null){
+     let newlogRec = {
+                simTime:this.time(),
+                name:message,
+                message:message
+            };
+            this.logRecords.push(newlogRec);
+   if (!this.logger) return;
+    let entityMsg = '';
+
+    if (type) {
+        entityMsg = ` [${type}]`;
+    }
+  
+  
+    this.logger(`${this.simTime.toFixed(3)}${entityMsg}   ${message}`);
 }
 
 
@@ -229,6 +247,70 @@ return promise;
       }
     });
 
+    this.statistics.resourceStats.forEach(resStat=>{
+    resStat.numberScheduled.record(resStat.currentScheduled,this.simTime-resStat.lastRecordedTime);
+    resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
+
+    if(resStat.currentScheduled===0)
+    {
+         resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
+    
+    }
+    else{
+        resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
+    
+    }
+
+})
+
+
+this.resources.forEach(resource=>{
+    
+         let resStat =  this.resourceStats(resource);
+         let duration = this.simTime - resource.lastStateChangedTime;
+
+        switch (resource.state) {
+            case ResourceStates.idle:
+                //The resource IS NOT IDLE ANYMORE
+                resource.idleTime+=duration;
+                resStat.totalIdleTime+=duration;
+                break;
+            case ResourceStates.busy:
+                //The resource IS NOT IDLE ANYMORE
+                resource.busyTime+=duration;
+                resStat.totalBusyTime+=duration;
+
+                break;
+            case ResourceStates.transfer:
+                //The resource IS NOT IDLE ANYMORE
+                resource.transferTime+=duration;
+                resStat.totalTransferTime+=duration;
+                break;
+            case ResourceStates.broken:
+                //The resource IS NOT IDLE ANYMORE
+                resource.brokenTime+=duration;
+                resStat.totalBrokenTime+=duration;
+                break;
+            case ResourceStates.seized:
+                //The resource IS NOT IDLE ANYMORE
+                //resource+=this.simTime - resource.lastStateChangedTime;
+                break;
+            case ResourceStates.other:
+                //The resource IS NOT IDLE ANYMORE
+                resource.otherTime+=duration;
+                resStat.totalOtherTime+=duration;
+                break;
+        
+            default:
+                break;
+        }
+        
+        if(resource.scheduledState===ScheduledStates.scheduled)
+        {
+            
+            resStat.totalScheduledTime += this.simTime-resStat.lastScheduledTime;
+        }
+})
 
     this.processes.forEach(p=>{
         p.finalize();
@@ -251,10 +333,6 @@ dispose(entity:Entity){
 }
 
 
-
-entityStats(entity : Entity) : EntityStats{
-    return this.statistics.entityStats.get(entity.type);
-}
 
 
   
@@ -517,29 +595,6 @@ addEvents(entityModel,modelInstance){
 
 
 
-log(message:string,type:string=null, entity:Entity=null){
-     let newlogRec = {
-                simTime:this.time(),
-                name:message,
-                message:message
-            };
-            this.logRecords.push(newlogRec);
-   if (!this.logger) return;
-    let entityMsg = '';
-
-    if (type) {
-        entityMsg = ` [${type}]`;
-      /*if (entity.type) {
-        entityMsg = ` [${entity.type}]`;
-      }else {
-        entityMsg = ` [${entity.id}] `;
-      }*/
-    }
-  
-  
-    this.logger(`${this.simTime.toFixed(3)}${entityMsg}   ${message}`);
-}
-
 
 
 
@@ -554,12 +609,144 @@ createResources(resourceModels: any[]){
                     if(instanceCount===1){
                         this.runtime[resource.name] = resource;
                     };
+                    this.addResourceStateListeners(resource);
+
             }
-            this.statistics.resourceStats.set(resourceModel.type,new ResourceStats(resourceModel.type));
+            let res = new ResourceStats(resourceModel.type);
+            res.currentScheduled = instanceCount;
+            this.statistics.resourceStats.set(resourceModel.type,res);
             
             
     });
 }
+
+
+
+addResourceStateListeners(resource:Resource){
+    
+    resource.emitter.on("onBeforeResourceStateChanged",this.onBeforeResourceStateChanged);
+    resource.emitter.on("unScheduled",this.onUnScheduled);
+    resource.emitter.on("scheduled",this.onScheduled);
+    resource.emitter.on("onResourceBusy",this.onResourceBusy);
+}
+
+
+onResourceBusy=(resource:Resource)=>{
+    
+                let resStat =  this.resourceStats(resource);
+                resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
+
+                if(resStat.currentScheduled===0)
+                {
+                    resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
+                
+                }
+                else{
+                    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
+                
+                }
+                resStat.lastRecordedTime = this.simTime;
+                resStat.currentBusy++;
+}
+
+onBeforeResourceStateChanged=(resource:Resource)=>{
+    
+         let resStat =  this.resourceStats(resource);
+         let duration = this.simTime - resource.lastStateChangedTime;
+
+        switch (resource.state) {
+            case ResourceStates.idle:
+                //The resource IS NOT IDLE ANYMORE
+                resource.idleTime+=duration;
+                resStat.totalIdleTime+=duration;
+                break;
+            case ResourceStates.busy:
+                //The resource IS NOT IDLE ANYMORE
+                resource.busyTime+=duration;
+                resStat.totalBusyTime+=duration;
+                resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
+
+                if(resStat.currentScheduled===0)
+                {
+                    resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
+                
+                }
+                else{
+                    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
+                
+                }
+                resStat.lastRecordedTime = this.simTime;
+                resStat.currentBusy--;
+                break;
+            case ResourceStates.transfer:
+                //The resource IS NOT IDLE ANYMORE
+                resource.transferTime+=duration;
+                resStat.totalTransferTime+=duration;
+                break;
+            case ResourceStates.broken:
+                //The resource IS NOT IDLE ANYMORE
+                resource.brokenTime+=duration;
+                resStat.totalBrokenTime+=duration;
+                break;
+            case ResourceStates.seized:
+                //The resource IS NOT IDLE ANYMORE
+                //resource+=this.simTime - resource.lastStateChangedTime;
+                break;
+            case ResourceStates.other:
+                //The resource IS NOT IDLE ANYMORE
+                resource.otherTime+=duration;
+                resStat.totalOtherTime+=duration;
+                break;
+        
+            default:
+                break;
+        }
+        
+        resource.lastStateChangedTime  = this.simTime;
+}
+
+
+
+
+onUnScheduled = (resource:Resource)=>{
+
+    let resStat =  this.resourceStats(resource);
+    resStat.numberScheduled.record(resStat.currentScheduled,this.simTime-resStat.lastRecordedTime);
+    
+    resStat.totalScheduledTime += this.simTime-resStat.lastScheduledTime;
+
+    resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
+    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
+    
+    resStat.lastScheduledTime = this.simTime;
+    resStat.lastRecordedTime = this.simTime;
+    resStat.currentScheduled--;
+
+
+}
+onScheduled = (resource:Resource)=>{
+    let resStat =  this.resourceStats(resource);
+    
+    resStat.numberScheduled.record(resStat.currentScheduled,this.simTime-resStat.lastRecordedTime);
+    resStat.numberBusy.record(resStat.currentBusy,this.simTime-resStat.lastRecordedTime);
+
+    if(resStat.currentScheduled===0)
+    {
+         resStat.instantaneousUtilization.record(0, this.simTime-resStat.lastRecordedTime)
+    
+    }
+    else{
+        resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simTime-resStat.lastRecordedTime)
+    
+    }
+
+    resStat.lastScheduledTime = this.simTime;
+    resStat.lastRecordedTime = this.simTime;
+    resStat.currentScheduled++;
+
+}
+
+
 
 resource(name : string) : Resource{
     let r = this.resources.find(r=>{return r.name === name});
@@ -657,6 +844,18 @@ recordEntityStats(entity : Entity){
     this.entityStats(entity).valueAddedTime.record(entity.valueAddedTime);
     this.entityStats(entity).otherTime.record(entity.otherTime);
 }
+
+
+entityStats(entity : Entity) : EntityStats{
+    return this.statistics.entityStats.get(entity.type);
+}
+
+
+resourceStats(resource : Resource) : ResourceStats{
+    return this.statistics.resourceStats.get(resource.type);
+}
+
+
 
 
 

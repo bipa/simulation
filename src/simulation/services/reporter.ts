@@ -22,26 +22,12 @@ defaultReporter(message){
 }
     
 reportRecord(heading:string =null ,statRecord: DataRecord=null ){
-   /* if(heading)
-    {
-        this.reporter(heading);
-        this.reporter();
-    }*/
-
     if(statRecord)
     {
 
-        let s = `       ${heading}          ${statRecord.average.toFixed(2)}       ${statRecord.max.toFixed(2)}        ${statRecord.min.toFixed(2)}        ${statRecord.deviation.toFixed(2)}      ${statRecord.sum.toFixed(2)}`
+        let s = `       ${heading}          ${statRecord.average.toFixed(4)}       ${statRecord.max.toFixed(2)}        ${statRecord.min.toFixed(2)}        ${statRecord.deviation.toFixed(2)}      ${statRecord.sum.toFixed(2)}`
         
         this.reporter(s);
-     /*   this.reporter(`         Antall       : ${statRecord.count.toFixed(2)}      `);
-        this.reporter(`         Gjennomsnitt : ${statRecord.average.toFixed(2)}`);
-        this.reporter(`         Max          : ${statRecord.max.toFixed(2)}`);
-        this.reporter(`         Min          : ${statRecord.min.toFixed(2)}`);
-        this.reporter(`         Variance     : ${statRecord.variance.toFixed(2)}`);
-        this.reporter(`         Deviation    : ${statRecord.deviation.toFixed(2)}`);
-        this.reporter(`         Sum          : ${statRecord.sum.toFixed(2)}`);
-        this.reporter(`         Sum weighted : ${statRecord.sumWeighted.toFixed(2)}`);*/
     }
 }
 
@@ -105,8 +91,18 @@ reportResources(simulation:Simulation){
     simulation.statistics.resourceStats.forEach((resourceStats,type)=>{
         this.reporter(type);
         this.reporter();
-
-
+            this.reportRecord("Antall busy:   ",resourceStats.numberBusy.report());
+            this.reportRecord("Antall scheduled:     ",resourceStats.numberScheduled.report());
+            this.reportRecord("Effektiv:    ",resourceStats.instantaneousUtilization.report());
+            this.reporter(`         Ideell:    ${resourceStats.scheduledUtilization.toFixed(4)}`);
+            this.reporter();
+            this.reporter(`     Total tid:        ${resourceStats.totalScheduledTime}`);
+            this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Busy:         ${(resourceStats.totalBusyTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Transfer:     ${(resourceStats.totalTransferTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Broken:       ${(resourceStats.totalBrokenTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Other:        ${(resourceStats.totalIdleTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter();
 
     });
 
