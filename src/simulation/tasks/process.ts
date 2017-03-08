@@ -1,8 +1,7 @@
 import { Queue, QueueTypes } from '../queues/queue';
 import { FifoQueue } from '../queues/fifoQueue';
 import { AbstractQueue } from '../queues/abstractQueue';
-import { Entity } from '../model/entity';
-import { Allocations } from '../model/allocations';
+import { Entity,Allocations } from '../model/entity';
 import { Resource, ResourceStates } from '../model/resource';
 import { Simulation } from '../simulation';
 import { Distribution } from '../stats/distributions';
@@ -144,7 +143,7 @@ export class Process {
 
     dequeue() {
         let entity = this.queue.dequeue();
-        this.simulation.recordEntityStat(entity,entity.runtime.enqueueTime,Allocations.wait);
+        this.simulation.recorder.recordEntityStat(entity,entity.runtime.enqueueTime,Allocations.wait);
         this.simulation.log(`${entity.name} dequeued`, "dequeue")
         if (this.queue.length > 0) {
             let nextEntity = this.queue.peek();
@@ -166,7 +165,7 @@ export class Process {
         let simEvent =  this.simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`);
         resource.process(entity);       
         this.simulation.eventEmitter.once(simEvent.name,sEvent=>{
-            this.simulation.recordEntityStat(entity,timeStampBefore,this.allocation);
+            this.simulation.recorder.recordEntityStat(entity,timeStampBefore,this.allocation);
         });
         return simEvent.promise
     }

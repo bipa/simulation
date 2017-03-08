@@ -1,24 +1,22 @@
-import {Queue} from './queues/queue';
-import {AbstractQueue} from './queues/abstractQueue';
+
 import {Entity} from './model/entity';
 import {Station} from './model/station';
 import {Route} from './model/route';
-import {Resource, ResourceStates, ScheduledStates} from './model/resource';
-import {PriorityQueue} from './queues/priorityQueue';
-import {Random} from './stats/random';
+import {Resource} from './model/resource';
 import {SimEvent} from './simEvent';
 import {Process} from './tasks/process';
-import {Population,DataSeries,TimeSeries} from './stats/dataRecorder';
-import {DataRecord} from './stats/dataRecord';
+
+
+import {PriorityQueue} from './queues/priorityQueue';
+import {AbstractQueue} from './queues/abstractQueue';
+import {Queue} from './queues/queue';
+
+import {Random} from './stats/random';
 import {Units,Distributions,Distribution} from './stats/distributions';
-import {Statistics} from './stats/statistics';
-import {EntityStats} from './stats/entityStats';
-import {ResourceStats} from './stats/resourceStats';
-import {QueueStats} from './stats/queueStats';
-import { Allocations } from './model/allocations';
 
 import { Reporter } from './services/reporter';
 import { Recorder } from './services/recorder';
+import { Creator } from './services/creator';
 
 
 
@@ -38,8 +36,11 @@ const EventEmitter = require('events');
 
 export class Simulation{
 
+  variables:any;
+  data:any;
 
   simTime:number;
+
   entities:Set<Entity>;
   entityModels: Map<string,any>;
   resources:Resource[];
@@ -47,7 +48,6 @@ export class Simulation{
   logRecords:any[];
   stations:Station[];
   routes:Route[];
-  stats:Statistics;
   queue:PriorityQueue<SimEvent>;
   runtime:any;
   random:Random;
@@ -56,17 +56,15 @@ export class Simulation{
 
   reporter:Reporter;
   recorder:Recorder;
+  creator : Creator;
 
   endTime:number;
   baseUnit:Units;
   eventEmitter:any;
-  data:any;
   eventCount:number;
   unscheduledEvents:Map<number,SimEvent>;
   concurrentEvents:Promise<SimEvent>[];
-  variables:any;
   useLogging:boolean;
-  statistics:Statistics;
 
   constructor(model : any) {
     this.useLogging = model.useLogging || false;
@@ -84,23 +82,25 @@ export class Simulation{
     this.logger = this.defaultLogger;
 
     this.reporter = new Reporter();
-    this.recorder = new Recorder();
+    this.recorder = new Recorder(this);
+    this.creator = new Creator(this);
 
 
     this.eventEmitter = new EventEmitter();
     this.eventEmitter.setMaxListeners(100);
     this.data = Object.assign({},model.data);
     this.variables = {};
-    this.createVariables(model.variables,this);
     this.eventCount = 0;
     this.unscheduledEvents = new Map<number,SimEvent>();
     this.concurrentEvents = [];
-    this.statistics = new Statistics();
  
     this.entityModels = new Map<string,any>();
-    this.createResources(model.resources);
-    this.createProcesses(model.processes);
-    this.createEntities(model.entities);
+
+
+    this.creator.createVariables(model.variables,this);
+    this.creator.createResources(model.resources);
+    this.creator.createProcesses(model.processes);
+    this.creator.createEntities(model.entities);
 
   }
 
@@ -115,7 +115,7 @@ report(){
 
 log(message:string,type:string=null, entity:Entity=null){
      let newlogRec = {
-                simTime:this.time(),
+                simTime:this.simTime,
                 name:message,
                 message:message
             };
@@ -132,13 +132,10 @@ log(message:string,type:string=null, entity:Entity=null){
 }
 
 
-  time() {
-    return this.simTime;
-  }
 
 scheduleEvent(simEvent:SimEvent,duration,message:string=null){
-    simEvent.deliverAt = this.time()+duration;
-    //simEvent.scheduledAt = this.time();
+    simEvent.deliverAt = this.simTime+duration;
+    //simEvent.scheduledAt = this.simTime;
     simEvent.message = message;
     simEvent.isScheduled = true;
     this.queue.add(simEvent);
@@ -151,11 +148,11 @@ setTimer(duration:number=null, type:string = null,message:string=null) : SimEven
 
     let simEvent : SimEvent = null;
     if(duration){        
-        simEvent = new SimEvent(this.time(),this.time()+duration,type,message);
+        simEvent = new SimEvent(this.simTime,this.simTime+duration,type,message);
         simEvent.isScheduled = true;
         this.queue.add(simEvent);
     }else{
-        simEvent = new SimEvent(this.time(),this.time(),type,message);
+        simEvent = new SimEvent(this.simTime,this.simTime,type,message);
         this.unscheduledEvents.set(simEvent.id,simEvent);
     }
 
@@ -205,16 +202,9 @@ setTimer(duration:number=null, type:string = null,message:string=null) : SimEven
       this.simTime = event.deliverAt;
       this.log(event.message,event.type);
       //if(this.eventCount>1)
-        this.eventEmitter.emit(event.name, event);
+    this.eventEmitter.emit(event.name, event);
         
-      /*this.log(`Count simulation listeners EVENTACTIVE:  ${this.eventEmitter.listenerCount("eventActive")}`,)
-      this.log(`Count process listeners QUEUECHANGED:  ${this.processes[0].eventEmitter.listenerCount("queueChanged")}`,)
-      this.log(`Count resource listeners IDLE:  ${this.resources[0].emitter.listenerCount("idle")}`,)*/
-      
-      //event.deliver();
-      
-      
-      //let res = await event.promise;
+        
       if(this.concurrentEvents.length>0){
             let r   = await Promise.all(this.concurrentEvents);
             this.concurrentEvents.length = 0;
@@ -245,26 +235,15 @@ return promise;
 
  finalize() {
 
-    //WIP
-    this.entities.forEach(entity=>{
-        if (entity.finalize) {
-          entity.finalize();
-      }
-      let entityModel = this.entityModels.get(entity.type);
-      if(entityModel.recordWip){
-          this.recordEntityStats(entity);
-      }
-    });
+   
 
+    this.recorder.finalizeEntityRecords();
 
-    this.recorder.finalizeResourceRecords(this);
+    this.recorder.finalizeResourceRecords();
 
+    this.recorder.finalizeProcessRecords();
 
-
-    this.processes.forEach(p=>{
-        p.finalize();
-       // this.reportProcess(p);
-    });
+   
   }
 
 
@@ -273,11 +252,8 @@ return promise;
 dispose(entity:Entity){
   
     //keep some stats here
-    entity.dispose(this.time());
-    this.entityStats(entity).countStats.leave(entity.timeEntered,this.simTime);
-    this.entityStats(entity).totalTime.record(entity.timeLeft  - entity.timeEntered);
-    this.recordEntityStats(entity);
-                
+    entity.dispose(this.simTime);
+    this.recorder.recordEntityDispose(entity);
     this.entities.delete(entity);
 }
 
@@ -344,386 +320,14 @@ addRandomValue(dist:Distribution){
         
 
 
-createProcesses(processModels:any[]){
-  processModels.forEach(processModel=>{
-      let process = new Process(this,processModel);
-      this.runtime[processModel.name] = process;
-      this.processes.set(process.name,process);
-  });
-}
 
-process(name : string):Process{
-    let process =  this.processes.get(name);
-    return process;
-}
 
- 
 
-//Create Entities
 
-  createEntities(entityModels:any[]){
-    entityModels.forEach(entityModel=>{
-        this.entityModels.set(entityModel.type,entityModel);
-      this.statistics.entityStats.set(entityModel.type,new EntityStats(entityModel.type));
-      this.setConventions(entityModel);
-      this.scheduleNextCreation(entityModel);
-    })
-  }
 
 
 
 
- async scheduleNextCreation(entityModel:any){
-
-          let createAt = this.addRandomValue(entityModel.creation.dist);
-          this.setTimer(createAt,"creation",entityModel.name).promise.then((simEvent)=>{
-                        this.createModel(entityModel);
-
-                    })
-}
-
-
- setConventions(entityModel:any){
-          
-      if(!entityModel.creation){
-          entityModel.creation = {
-              dist:{
-                  value:0
-              },
-              runOnce:true
-          };
-      }else{
-          if(entityModel.creation.dist==null) entityModel.creation.dist = {value:0};
-          if(entityModel.creation.runOnce==null) entityModel.creation.runOnce = false;
-          if(entityModel.creation.runBatch==null&&!entityModel.creation.batchsize) entityModel.creation.batchsize = 1;
-
-      }
-  }
-
-async createModel(entityModel){
-          
-          this.createEntityInstance(entityModel);
-          
-            if(!entityModel.creation.runOnce)
-            {
-                if(entityModel.creation.repeatInterval){
-                    
-                    let repeatInterval = this.addRandomValue(entityModel.creation.repeatInterval);
-                    this.setTimer(repeatInterval,"creation",entityModel.name).promise.then((simEvent)=>{
-                        this.createModel(entityModel);
-                        
-                        
-
-                    })
-                    
-                }
-                else{
-                    this.scheduleNextCreation(entityModel);
-                }
-            }
-            
-      }
-
-
-
-
-createEntityInstance(entityModel){
-            if(entityModel.creation.runBatch){
-                let modelInstances  = [];
-                for (let i = 0; i < entityModel.creation.batchSize; i++) {
-                    
-                   this.entities.add( this.createSingleItem(entityModel));
-                    
-                }
-            }
-            else{
-                this.entities.add(this.createSingleItem(entityModel));
-            }
-            
-            
-        }
-
-
-createSingleItem(entityModel) : Entity{
-                 let entityInstance = new Entity(entityModel);
-                  this.addEvents(entityModel,entityInstance);
-                  this.entityStats(entityInstance).countStats.enter(this.simTime);
-                  entityInstance.timeEntered = this.simTime;
-                  if(entityModel.creation.onCreateModel) entityModel.creation.onCreateModel(entityInstance,this);
-                return entityInstance;
-            }
-
-
-addEvents(entityModel,modelInstance){
-          
-          
-           //Should be SET AFTER the creation of an element
-            if(entityModel.plannedEvents)
-                entityModel.plannedEvents.forEach(async  plannedEvent=>{
-                    
-                    // let plannedEvent = new PlannedEvent(e);
-                    // this.model.addPlannedEvent(plannedEvent);
-                    plannedEvent.logMessage = plannedEvent.logMessage || plannedEvent.name;
-                    let startTime = this.addRandomValue(plannedEvent.dist);
-                    await this.setTimer(startTime).promise
-                            this.schedulePlannedEvent(plannedEvent,modelInstance);
-                    
-                    
-                });
-            
-            if(entityModel.randomEvents)
-                entityModel.randomEvents.forEach(async randomEvent=>{
-                    
-                    // let randomEvent = new RandomEvent(e);
-                    // this.model.addRandomEvent(randomEvent);
-                    randomEvent.logMessage = randomEvent.logMessage || randomEvent.name;
-                    if(randomEvent.numberOfRuns)
-                    {
-                        let next = 0;
-                        for (var i = 0; i < randomEvent.numberOfRuns; i++) {
-                           
-                                next+= this.addRandomValue(randomEvent.dist);
-                                await this.setTimer(next).promise
-                                    this.randomEventOccured(randomEvent,modelInstance);
-                                
-                        }
-                    }
-                    else{
-                        let startTime = this.addRandomValue(randomEvent.dist);
-                        await this.setTimer(startTime).promise
-                                    this.scheduleRandomEvent(randomEvent,modelInstance);
-                        
-                    }
-                    
-                    
-                    
-                    
-                });
-            
-          
-      }
-      
-   async schedulePlannedEvent(plannedEvent,modelInstance){
-            
-            
-            //Schedule the next plannedEvent
-            let repeatInterval = this.addRandomValue(plannedEvent.repeatInterval);
-            
-            let res =await this.setTimer(repeatInterval).promise
-                
-                 this.schedulePlannedEvent(plannedEvent,modelInstance);
-                //Log the execution of the planned event
-                if(plannedEvent.logEvent) this.log(plannedEvent.logMessage);
-                //Execute the planned event
-                plannedEvent.action(modelInstance,this);
-           
-            
-            
-            
-            
-        }
-        
-       async scheduleRandomEvent(randomEvent,modelInstance){
-            
-            //Schedule the next plannedEvent
-            let nextEventAt = this.addRandomValue(randomEvent.dist);
-            this.randomEventOccured(randomEvent,modelInstance);
-         
-            let res =await this.setTimer(nextEventAt).promise;
-                    this.scheduleRandomEvent(randomEvent,modelInstance);
-             
-            
-            
-        }
-        
-        randomEventOccured(randomEvent,modelInstance){
-            
-            if(randomEvent.logEvent) this.log(randomEvent.logMessage);
-            randomEvent.action(modelInstance,this);
-        }
-
-
-
-
-
-
-createResources(resourceModels: any[]){
-    resourceModels.forEach(resourceModel=>{
-
-            let instanceCount = resourceModel.quantity || 1;
-            for(let i =0;i<instanceCount;i++){
-                    let resource = new Resource(resourceModel);  
-                   
-                    this.resources.push(resource);
-                    if(instanceCount===1){
-                        this.runtime[resource.name] = resource;
-                    };
-                    this.addResourceStateListeners(resource);
-
-            }
-            let res = new ResourceStats(resourceModel.type);
-            res.currentScheduled = instanceCount;
-            this.statistics.resourceStats.set(resourceModel.type,res);
-            
-            
-    });
-}
-
-
-
-
-
-
-addResourceStateListeners(resource:Resource){
-    
-    resource.emitter.on("onBeforeResourceStateChanged",this.onBeforeResourceStateChanged);
-    resource.emitter.on("unScheduled",this.onUnScheduled);
-    resource.emitter.on("scheduled",this.onScheduled);
-    resource.emitter.on("onResourceBusy",this.onResourceBusy);
-}
-
-
-onResourceBusy=(resource:Resource)=>{
-    
-
-                this.recorder.onResourceBusy(resource,this);
-
-}
-
-onBeforeResourceStateChanged=(resource:Resource)=>{
-    
-
-        this.recorder.recordBeforeResourceStateChanged(resource,this);
-
-}
-
-onUnScheduled = (resource:Resource)=>{
-
-
-    
-                this.recorder.onUnScheduled(resource,this);
-
-
-}
-
-
-onScheduled = (resource:Resource)=>{
-    
-                this.recorder.onScheduled(resource,this);
-   
-}
-
-
-
-
-
-
-resource(name : string) : Resource{
-    let r = this.resources.find(r=>{return r.name === name});
-    return r;
-}
-
-
-
- createVariables(variables, ctx){
-                for(let variableName in variables) 
-                {
-                    if(Object.keys(variables[variableName]).length>0)
-                    {
-
-                           this.variables[variableName] = {};
-
-                             for(let subVariableName in variables[variableName]) 
-                             {
-                                 if(variableName=="noLog")
-                                 {
-                                        this.variables[variableName][subVariableName]=
-                                        variables[variableName][subVariableName];
-                                 }
-                                else{
-                                    this.createVariable(this.variables[variableName],
-                                    subVariableName,
-                                    variables[variableName][subVariableName],ctx)
-                                }
-                                
-                             }
-                    }else{
-                              this.createVariable(this.variables,
-                              variableName,
-                              variables[variableName],ctx)
-                     }
-
-                   
-                }
-        }
-
-
-        createVariable(obj,propName, initValue,ctx){
-                let vValue=initValue;
-                 Object.defineProperty(
-                     obj
-                     ,propName
-                     ,{
-                          get: function() { return vValue; },
-                     set: function(value) {
-                         vValue = value;
-                         ctx.simulationRecords.push(
-                             new SimulationRecord( ctx.time(), propName,value)
-                         )}
-                        }
-                )
-        }
-
-
-
-  recordEntityStat(entity:Entity,timeStampBefore : number,allocation : Allocations = Allocations.valueAdded){
-
-        switch (allocation) {
-            case Allocations.valueAdded:
-                entity.valueAddedTime += this.simTime - timeStampBefore;
-                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
-                break;
-            case Allocations.wait:
-                entity.waitTime += this.simTime - timeStampBefore;
-                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
-                break;
-            case Allocations.nonValueAdded:
-                entity.nonValueAddedTime += this.simTime - timeStampBefore;
-                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
-                break;
-            case Allocations.transfer:
-                entity.transferTime += this.simTime - timeStampBefore;
-                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
-                break;
-            case Allocations.other:
-                entity.otherTime += this.simTime - timeStampBefore;
-                //this.entityStats(entity).nonValueAddedTime.record(this.simTime - timeStampBefore);
-                break;
-        
-            default:
-                break;
-        }
-
-    }
-
-recordEntityStats(entity : Entity){
-    
-    this.entityStats(entity).nonValueAddedTime.record(entity.nonValueAddedTime);
-    this.entityStats(entity).waitTime.record(entity.waitTime);
-    this.entityStats(entity).transferTime.record(entity.transferTime);
-    this.entityStats(entity).valueAddedTime.record(entity.valueAddedTime);
-    this.entityStats(entity).otherTime.record(entity.otherTime);
-}
-
-
-entityStats(entity : Entity) : EntityStats{
-    return this.statistics.entityStats.get(entity.type);
-}
-
-
-resourceStats(resource : Resource) : ResourceStats{
-    return this.statistics.resourceStats.get(resource.type);
-}
 
 
 

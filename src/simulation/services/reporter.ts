@@ -63,7 +63,7 @@ reportProcess(process:Process){
 reportEntities(simulation:Simulation){
     
 
-    simulation.statistics.entityStats.forEach((entityStats,type)=>{
+    simulation.recorder.statistics.entityStats.forEach((entityStats,type)=>{
             this.reporter(type)
             this.reporter();
             this.reportRecord("Antall WIP:   ",entityStats.countStats.sizeSeries.report());
@@ -88,13 +88,13 @@ reportEntities(simulation:Simulation){
 reportResources(simulation:Simulation){
     
 
-    simulation.statistics.resourceStats.forEach((resourceStats,type)=>{
+    simulation.recorder.statistics.resourceStats.forEach((resourceStats,type)=>{
         this.reporter(type);
         this.reporter();
             this.reportRecord("Antall busy:   ",resourceStats.numberBusy.report());
-            this.reportRecord("Antall scheduled:     ",resourceStats.numberScheduled.report());
-            this.reportRecord("Effektiv:    ",resourceStats.instantaneousUtilization.report());
-            this.reporter(`         Ideell:    ${resourceStats.scheduledUtilization.toFixed(4)}`);
+            this.reportRecord("Antall sche:   ",resourceStats.numberScheduled.report());
+            this.reportRecord("Effektiv:      ",resourceStats.instantaneousUtilization.report());
+            this.reporter(`       Ideell:                  ${resourceStats.scheduledUtilization.toFixed(4)}`);
             this.reporter();
             this.reporter(`     Total tid:        ${resourceStats.totalScheduledTime.toFixed(0)}`);
             this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.totalScheduledTime).toFixed(2)}`);
