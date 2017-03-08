@@ -240,7 +240,7 @@ projectsPromise:Promise<SimulationProject[]>;
 
 categories : FirebaseListObservable<SimulationProject[]>;
 
-private commentsUrl = 'http://localhost:3000/api/model/createscenarioe'; 
+private commentsUrl = 'http://localhost:3000/api/model/createscenario'; 
 private scenarioesObservable :FirebaseListObservable<Scenario[]>;
 private projectsObservable :FirebaseListObservable<SimulationProject[]>;
 

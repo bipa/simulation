@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "demo",
-            "program": "${workspaceRoot}/src/simulation/demo.ts",
+            "program": "${workspaceRoot}/src/demo.ts",
             "cwd": "${workspaceRoot}",
             "outFiles":["${workspaceRoot}/server/**/*.js"],
             "skipFiles": [
@@ -27,8 +27,13 @@
             "name": "server",
             "type": "node2",
             "request": "launch",
-            "program": "${workspaceRoot}\\server.js",
-            "cwd": "${workspaceRoot}"
+            "program": "${workspaceRoot}/src/server.ts",
+            "cwd": "${workspaceRoot}",
+            "outFiles":["${workspaceRoot}/server/**/*.js"],
+            "skipFiles": [
+                        "node_modules/**/*.js",
+                        "<node_internals>/**/*.js"
+            ]
         },
         {
             "name": "Attach to Process",
@@ -40,7 +45,7 @@
             "name": "compiled",
             "request": "launch",
             "type": "node",
-            "program": "${workspaceRoot}/server/simulation/demo.js",
+            "program": "${workspaceRoot}/server/demo.js",
             "cwd": "${workspaceRoot}",
             "skipFiles": [
                         "node_modules/**/*.js",

@@ -1,10 +1,12 @@
 
 
-const simulateRoutes  = require("./src/api/simulate/simulateRoutes.js").simulateRoutes;
+
+import {SimulationRoutes} from './api/simulate/simulationRoutes';
+
 const  bodyParser = require('body-parser');
 
 
-
+ let simulationRoutes = new SimulationRoutes().simulateRoutes;
 
 //
 // # SimpleServer
@@ -37,8 +39,8 @@ app.use(bodyParser.json({limit: '10mb'}));
 
 app.use(express.static(path.resolve(__dirname, 'client/dist')));
 
-
-app.use('/api/model', simulateRoutes); 
+ 
+app.use('/api/model', simulationRoutes); 
 
 app.get('/api', function(req, res){
     res.send('welcome to my API!');

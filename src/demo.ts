@@ -1,8 +1,8 @@
 
 
 
-import {Simulation} from './simulation'
-import {Distributions} from './stats/distributions'
+import {Simulation} from './simulation/simulation'
+import {Distributions} from './simulation/stats/distributions'
 
 
 
