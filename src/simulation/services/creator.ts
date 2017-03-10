@@ -26,7 +26,7 @@ export class Creator{
 //Create Entities
 
   createEntities(entityModels:any[]){
-    entityModels.forEach(entityModel=>{
+    entityModels.filter(entityModel=>{return !entityModel.isResource}).forEach(entityModel=>{
         this.simulation.entityModels.set(entityModel.type,entityModel);
         this.simulation.recorder.addEntityStats(entityModel.type);
       this.setConventions(entityModel);
@@ -64,7 +64,7 @@ export class Creator{
       }
   }
 
-async createModel(entityModel){
+ createModel(entityModel){
           
           this.createEntityInstance(entityModel);
           
@@ -212,7 +212,7 @@ addEvents(entityModel,modelInstance){
 
 
 createResources(resourceModels: any[]){
-    resourceModels.forEach(resourceModel=>{
+    resourceModels.filter(entityModel=>{return entityModel.isResource}).forEach(resourceModel=>{
 
             let instanceCount = resourceModel.quantity || 1;
             for(let i =0;i<instanceCount;i++){
@@ -234,7 +234,19 @@ createResources(resourceModels: any[]){
 }
 
 
-
+process(name:string) : Process{
+    
+        let process =  this.simulation.processes.get(name);
+        if(process)
+            return process;
+        else
+        {
+            process =  new Process(this.simulation,{name:name});
+            this.simulation.processes.set(process.name,process);
+            return process;
+        }
+            
+}
 
 resource(name : string) : Resource{
     let r = this.simulation.resources.find(r=>{return r.name === name});
@@ -254,10 +266,7 @@ resource(name : string) : Resource{
     });
     }
 
-    process(name : string):Process{
-        let process =  this.simulation.processes.get(name);
-        return process;
-    }
+
 
  
 

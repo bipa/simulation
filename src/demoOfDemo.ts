@@ -1,17 +1,30 @@
 
 
+var fs = require('fs');
+const util = require('util')
+require('ts-node').register({ 
+    
+fast:true,
+project:""
+//,compilerOptions:"target:'es6'"
 
-import {Simulation} from './simulation/simulation'
+ })
+
+
+
+const code  =
+
+`import {Simulation} from './simulation/simulation'
 import {Distributions} from './simulation/stats/distributions'
 
 
 export class Demo{
 
 
+
 data  :any                        = {}; //don't remove this line
 constants  :any                        = {}; //don't remove this line
 model:any;
-logText:string ="";
 
 constructor(){
     this.data.partArrivalDist = {type:Distributions.Exponential, param1:5}
@@ -93,30 +106,60 @@ getPreferences() {
 
     return {
         seed:1234,
-        simTime:200,
-        useLogging:true,
-        logger:this.logger
+        simTime:20000,
+        useLogging:true
     }
 
 
 
 }
 
-logger =(message:string)=>{
-    this.logText+=message;
-}
 
-  async simulate() {
-        let simulation = new Simulation(this.model);
-        await simulation.simulate();
-        simulation.report();
-
-}
-
-
-
+async  simulate(){
+    
+    let simulation = new Simulation(this.model);
+    await simulation.simulate();
+    simulation.report();
+    
 
 }
 
-let d = new Demo();
+
+
+
+}`
+
+
+
+
+/*fs.writeFile("server/test.ts", code, function(err) {
+    if(err) {
+        return console.log(err);
+    }
+
+     console.log("The file was saved!");
+
+    let Demo = require('./test.ts');
+
+    console.log(Demo.toString());
+
+
+    console.log(util.inspect(Demo, false, null))
+    let d = new Demo.Demo();
+    d.simulate(); 
+
+});*/ 
+
+
+
+
+ 
+
+ let Demo = require('./test.ts');
+
+ console.log(Demo.toString());
+
+
+console.log(util.inspect(Demo, false, null))
+let d = new Demo.Demo();
 d.simulate();

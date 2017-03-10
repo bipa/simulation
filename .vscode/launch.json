@@ -20,14 +20,14 @@
             "type": "node",
             "request": "launch",
             "name": "aukraHeimen",
-            "program": "${workspaceRoot}/src/aukraHeimen.js",
+            "program": "${workspaceRoot}/server/KzgTQGeC4d.js",
             "cwd": "${workspaceRoot}"
         },
         {
             "name": "server",
             "type": "node2",
             "request": "launch",
-            "program": "${workspaceRoot}/src/server.ts",
+            "program": "${workspaceRoot}/server.js",
             "cwd": "${workspaceRoot}",
             "outFiles":["${workspaceRoot}/server/**/*.js"],
             "skipFiles": [

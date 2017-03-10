@@ -346,6 +346,19 @@ this.categories.push(this.DOCS[2]);
 
 }
 
+    newProject(project:SimulationProject){
+      return new Promise<SimulationProject>((resolve,reject)=>{
+          this.projectsObservable.push(project).then(
+
+              s=>{
+                project['$key'] = s.key;
+                resolve(project);
+              }
+
+          ).catch(reject);
+      })
+      
+    }
 
 
   async getProjects(categoryId:string){
@@ -415,12 +428,15 @@ updateScenario(scenario,saveModel){
         let options       = new RequestOptions({ headers: headers }); // Create a request option
 
         return this.http.post(this.commentsUrl, body, options) // ...using post request
-                         .map((res:Response) => res.json()) // ...and calling .json() on the response to return data
-                         .catch((error:any) => Observable.throw(error.json().error || 'Server error')).toPromise(); //...errors if any
+                         .map((res:Response) => 
+                         res.json()) // ...and calling .json() on the response to return data
+                         .catch((error:any) => 
+                         Observable.throw(error.json().error || 'Server error'))
+                         .toPromise(); //...errors if any
     }
 
 
-
+ 
 
 
 
@@ -601,7 +617,6 @@ return m;
 
 function getCharts(){
   return `
-let charts =
 [
   { variable:"countMyEntities"},
   { variable:"countMyEntityPlannedEvents"},
@@ -677,15 +692,8 @@ let chart2={ // Render Method[3]
 
 function getCommonStub(){
   return `
-
-let data                          = {}; //don't remove this line
-let constants                          = {}; //don't remove this line
-
-
-data.myEntityResourceAmount        = 0;
-data.startMyEntityPlannedEvent     = {unit:"hours",value:2*24+10}; //each wednesday at 10:00
-data.intervalMyEntityPlannedEvent  = {unit:"days",value:14}; //every 14 day
-data.frequencyMyEntityRandomEvent   = {name:"exponential", unit:"days", param1:7}; //expected every 7th day;`;
+  this.data.partArrivalDist = {type:Distributions.Exponential, param1:5}
+  this.data.machineProcessTime = {type:Distributions.Exponential, param1:3}`;
 
 
 
@@ -765,15 +773,7 @@ data.nurses                       = [
 }
 
 function getVariablesStub(){
-  return `
-
-let variables                         = {}; //don't remove this line - declaration
-variables.kpi                         = {}; //don't remove this line - declaration
-
-variables.kpi.countMyEntities            = 0;  //total count of myEntities
-variables.kpi.countMyEntityPlannedEvents = 0;  //count my planned events
-variables.kpi.countMyEntityRandomEvents  = 0;  //count my planned events
-`;
+  return ``;
 }
 function getVariables(){
 
@@ -800,7 +800,6 @@ variables.kpi.nursesTotalWalkTime     = 0;  //total time nurses has spent walkin
 
 function getStationsStub(){
   return `
-let stations =
 [
   {name:"myStation"}
 ]`;
@@ -859,22 +858,17 @@ let stations =
 function getSettings(){
 
   return  `
-let preferences =
-{       
-  seed        : 1234,
-  simSpeed    : 10,
-  simTime     : 2*365*24*60, //two years
-  logVerbose  : false,
-  logEvents   : false,
-  logWalking  : true
-};`;
+  {
+        seed:1234,
+        simTime:20000,
+        useLogging:true
+  }`;
 
 }
 
 
 function getRoutesStub(){
   return `
-let routes =
 [
   {from:"myStation", to:"myStation"}
 ]`;
@@ -1267,60 +1261,42 @@ let entities =
 
 function getEntitiesStub(){
   return `
-let entities =
 [
-     
-    {
-        name:"myEntity",
-       creation:{
-         runOnce:true,
-         onCreateModel:(building,ctx)=>{
-           
-            ctx.variables.kpi.countMyEntities++;
-           
-         }
-      },
-      resources:[
-                   {
-                     name:"myEntityResource",
-                     capacity:data.myEntityResourceAmount,
-                     hasQueue:true,
-                   }
-                 ],
-      
-      plannedEvents :[
+
         {
-          name : "myPlannedEvent",
-          logEvent:true,
-          dist:data.startMyEntityPlannedEvent,
-          repeatInterval:data.intervalMyEntityPlannedEvent,
-          action: (myentity,ctx)=>{
-          
-              ctx.variables.kpi.countMyEntityPlannedEvents++;
-            
-          }
-           
-        }
-      ],  
-          randomEvents:[
-            {
-              //The patient has an emergency, which needs to be treated immediately, but queued
-              name:"myRandomEvent",
-              logEvent:true,
-              logMessage :"myRandomEvent",
-              dist:data.frequencyMyEntityRandomEvent,
-              action:(user,ctx)=>{
-                    ctx.variables.kpi.countMyEntityRandomEvents++;
-              }
+            type:"part",
+            creation:{
+                dist:this.data.partArrivalDist,
+                onCreateModel:async (part,ctx:Simulation)=>{
+
+                    
+
+                    let simEvent = await ctx.process("processPart").seize(part,ctx.runtime.worker1);
+
+                    await ctx.process("processPart").delay(part,simEvent.result.resource,ctx.data.machineProcessTime);                
+                
+                    ctx.process("processPart").release(part,simEvent.result.resource);
+                    
+                    ctx.dispose(part);
+                  
+
+
+                }            
             }
-          ]
+        },
+
+        {
+            type:"worker",
+            name:"worker1",
+            isResource:true
+        },
         
-        
-        
-        
-        
-        
-   
-    }
-];`
+        {
+            type:"worker2",
+            quantity:10,
+            isResource:true
+        }
+
+
+    ];`
 }

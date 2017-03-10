@@ -67,7 +67,7 @@ export class Simulation{
   useLogging:boolean;
 
   constructor(model : any) {
-    this.useLogging = model.useLogging || false;
+    this.useLogging = model.preferences.useLogging || false;
     this.random = new Random(model.preferences.seed);
     this.baseUnit = model.preferences.baseUnit || Units.Minute;
     this.simTime = 0;
@@ -79,7 +79,7 @@ export class Simulation{
     this.runtime={};
     this.logRecords =[];
     this.simulationRecords = [];
-    this.logger = this.defaultLogger;
+    this.logger = model.preferences.logger ||this.defaultLogger;
 
     this.reporter = new Reporter();
     this.recorder = new Recorder(this);
@@ -98,8 +98,8 @@ export class Simulation{
 
 
     this.creator.createVariables(model.variables,this);
-    this.creator.createResources(model.resources);
-    this.creator.createProcesses(model.processes);
+    this.creator.createResources(model.entities);
+    //this.creator.createProcesses(model.processes);
     this.creator.createEntities(model.entities);
 
   }
@@ -165,7 +165,8 @@ setTimer(duration:number=null, type:string = null,message:string=null) : SimEven
             })
 
 
-   }).then(e=>{
+   })
+   .then(e=>{
       return simEvent;
    });
 
@@ -247,7 +248,9 @@ return promise;
   }
 
 
-
+process(name:string) : Process{
+    return this.creator.process(name);
+}
 
 dispose(entity:Entity){
   

@@ -39,13 +39,15 @@ export class ComponentList {
 
 openDialog() {
     let dialogRef = this.dialog.open(NewProjectDialog);
-    dialogRef.afterClosed().subscribe(project => {
+    dialogRef.afterClosed().subscribe(async project => {
 
       if(project){
         /*this.docItems.addNewItem(this.category.id,result);*/
         project.categoryId=this.categoryId;
         project.name= project.name.toLowerCase();
+         project = await this.docItems.newProject(project);
         this.projects.push(project);
+
       }
 
     });

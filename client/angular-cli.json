@@ -26,7 +26,7 @@
       "scripts": [
         "../node_modules/ace-builds/src-min/ace.js",
         "../node_modules/zingchart/client/zingchart.min.js",
-        "../node_modules/ace-builds/src-min/mode-javascript.js",
+        "../node_modules/ace-builds/src-min/mode-typescript.js",
         "../node_modules/ace-builds/src-min/theme-tomorrow_night_bright.js"],
       "environments": {
         "source": "environments/environment.ts",
