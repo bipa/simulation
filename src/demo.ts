@@ -55,7 +55,7 @@ constructor(){
 
                     let simEvent = await ctx.process("processPart").seize(part,ctx.runtime.worker1);
 
-                    await ctx.process("processPart").delay(part,simEvent.result.resource,ctx.data.machineProcessTime);                
+                    await ctx.delay(part,simEvent.result.resource,ctx.data.machineProcessTime);                
                 
                     ctx.process("processPart").release(part,simEvent.result.resource);
                     

@@ -131,31 +131,7 @@ export class Process {
                 return simEvent.result;
     }
 
-/*
-    enqueue(entity: Entity) {
-        this.queue.enqueue(entity);
-        entity.runtime.enqueueTime = this.simulation.simTime;
-        this.simulation.log(`${entity.name} enqueued`, "enqueue")
 
-        this.eventEmitter.emit("enqueued")
-    }*/
-
-
-   /* dequeue() {
-        let entity = this.queue.dequeue();
-        this.simulation.recorder.recordEntityStat(entity,entity.runtime.enqueueTime,Allocations.wait);
-        this.simulation.log(`${entity.name} dequeued`, "dequeue")
-        if (this.queue.length > 0) {
-            let nextEntity = this.queue.peek();
-            this.eventEmitter.emit(nextEntity.name);
-        }
-    }*/
-
-/*
-    leave(entity: Entity) {
-        this.queue.leave(entity);
-        this.eventEmitter.emit("queueChanged")
-    }*/
 
 
 

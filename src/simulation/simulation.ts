@@ -1,5 +1,5 @@
 
-import {Entity} from './model/entity';
+import {Entity,Allocations} from './model/entity';
 import {Station} from './model/station';
 import {Route} from './model/route';
 import {Resource} from './model/resource';
@@ -9,6 +9,7 @@ import {SimEvent} from './simEvent';
 import {Process} from './tasks/process';
 import {Walk} from './tasks/walk';
 import {Seize} from './tasks/seize';
+import {Delay} from './tasks/delay';
 import { Queue, QueueTypes } from './queues/queue';
 import { AbstractQueue } from './queues/abstractQueue';
 
@@ -417,7 +418,9 @@ route(from:Station, to :Station) : Route{
 
 
 
-
+    delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded): Promise<SimEvent>{
+       return Delay.delay(this,entity,resource,processTimeDist,allocation);
+    }
 
 
 
