@@ -19,11 +19,58 @@ export class Creator{
         this.simulation = simulation;
     }
 
+
+
+
+//ROUTES
+
+    createRoutes(routeModels : any[]){
+        routeModels.forEach(routeModel=>{
+            let fromStation = this.station(routeModel.from);
+            let toStation = this.station(routeModel.to);
+
+            let route =routeModel instanceof Route ? routeModel: new Route(fromStation,toStation,routeModel.distance,routeModel.twoway);
+         
+            Object.assign(route,routeModel);
+            this.simulation.routes.push(route);
+            if(route.twoWay){
+                let oppRoute = new Route(toStation,fromStation,routeModel.distance); 
+                Object.assign(oppRoute,routeModel);
+                this.simulation.routes.push(route);
+            }
+        })
+    }
+
+    route(from:Station,to:Station) : Route{
+       let r = this.simulation.routes.find(r=>{
+            return r.from===from && r.to===to;
+        })
+
+        return r;
+    }
+
+
+//STATIONS
+
+
+    createstations(stationModels : any[]){
+        stationModels.forEach(stationModel=>{
+            let station =stationModel instanceof Station ? stationModel: new Station(stationModel);
+            Object.assign(station,stationModels);
+            this.simulation.stations.push(station);
+        })
+    }
+
+
+    station(name:string) : Station{
+        let station =  this.simulation.stations.find(s=>{return s.name === name});
+        return station;
+    }
+
 //ENTITIES
 
 
 
-//Create Entities
 
   createEntities(entityModels:any[]){
     entityModels.filter(entityModel=>{return !entityModel.isResource}).forEach(entityModel=>{
@@ -44,7 +91,7 @@ export class Creator{
                         this.createModel(entityModel);
 
                     })
-}
+ }
 
 
  setConventions(entityModel:any){
@@ -91,7 +138,7 @@ export class Creator{
 
 
 
-createEntityInstance(entityModel){
+    createEntityInstance(entityModel){
             if(entityModel.creation.runBatch){
                 let modelInstances  = [];
                 for (let i = 0; i < entityModel.creation.batchSize; i++) {
@@ -108,8 +155,9 @@ createEntityInstance(entityModel){
         }
 
 
-createSingleItem(entityModel) : Entity{
+    createSingleItem(entityModel) : Entity{
                  let entityInstance = new Entity(entityModel);
+                 Object.assign(entityInstance,entityModel);
                   this.addEvents(entityModel,entityInstance);
                   this.simulation.recorder.recordEntityCreate(entityInstance);
                   entityInstance.timeEntered = this.simulation.simTime;
@@ -118,7 +166,7 @@ createSingleItem(entityModel) : Entity{
             }
 
 
-addEvents(entityModel,modelInstance){
+    addEvents(entityModel,modelInstance){
           
           
            //Should be SET AFTER the creation of an element
@@ -207,34 +255,56 @@ addEvents(entityModel,modelInstance){
         }
 
 
+
 //RESOURCES
 
 
 
-createResources(resourceModels: any[]){
-    resourceModels.filter(entityModel=>{return entityModel.isResource}).forEach(resourceModel=>{
+    createResources(resourceModels: any[]){
+        resourceModels.filter(entityModel=>{return entityModel.isResource}).forEach(resourceModel=>{
 
-            let instanceCount = resourceModel.quantity || 1;
-            for(let i =0;i<instanceCount;i++){
-                    let resource = new Resource(resourceModel);  
-                   
-                    this.simulation.resources.push(resource);
-                    if(instanceCount===1){
-                        this.simulation.runtime[resource.name] = resource;
-                    };
-                    this.simulation.recorder.addResourceStateListeners(resource);
+                let instanceCount = resourceModel.quantity || 1;
+                for(let i =0;i<instanceCount;i++){
+                        let resource = new Resource(resourceModel);  
+                        Object.assign(resource,resourceModel);
+                        this.simulation.resources.push(resource);
+                        if(instanceCount===1){
+                            this.simulation.runtime[resource.name] = resource;
+                        };
+                        this.simulation.recorder.addResourceStateListeners(resource);
 
-            }
+                }
 
-            this.simulation.recorder.recordResourceCreate(resourceModel.type,instanceCount);
-         
+                this.simulation.recorder.recordResourceCreate(resourceModel.type,instanceCount);
             
-            
+                
+                
+        });
+    }
+
+
+    resource(name : string) : Resource{
+        let r = this.simulation.resources.find(r=>{return r.name === name});
+        return r;
+    }
+
+
+//PROCESSES
+
+
+
+    createProcesses(processModels:any[]){
+    processModels.forEach(processModel=>{
+        let process = new Process(this.simulation,processModel);
+        Object.assign(process,processModel);
+        this.simulation.runtime[processModel.name] = process;
+        this.simulation.processes.set(process.name,process);
     });
-}
+    }
 
 
-process(name:string) : Process{
+
+    process(name:string) : Process{
     
         let process =  this.simulation.processes.get(name);
         if(process)
@@ -246,27 +316,7 @@ process(name:string) : Process{
             return process;
         }
             
-}
-
-resource(name : string) : Resource{
-    let r = this.simulation.resources.find(r=>{return r.name === name});
-    return r;
-}
-
-
-//PROCESSES
-
-
-
-    createProcesses(processModels:any[]){
-    processModels.forEach(processModel=>{
-        let process = new Process(this.simulation,processModel);
-        this.simulation.runtime[processModel.name] = process;
-        this.simulation.processes.set(process.name,process);
-    });
     }
-
-
 
  
 
@@ -327,9 +377,6 @@ resource(name : string) : Resource{
 
 
 }
-
-
-
 
 
 

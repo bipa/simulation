@@ -1,9 +1,11 @@
 
 import {Resource,ResourceStates} from './resource'
+import {Station} from './station'
+import {IEntity} from './iEntity'
 
 let EventEmitter = require('events');
 
-export class Entity{
+export class Entity implements IEntity{
 
     static count:number=0;
 
@@ -18,6 +20,8 @@ export class Entity{
     waitTime:number = 0;
     otherTime:number = 0;
     runtime :any = {};
+
+    currentStation:Station;
 
     name:string;
     emitter:any;
@@ -38,6 +42,16 @@ export class Entity{
     dispose(time:number){
         this.timeLeft= time;
         this.duration = this.timeLeft-this.timeEntered;
+    }
+
+
+    enqueue(timestamp:number){
+
+    }
+
+
+    dequeue(timestamp:number){
+
     }
     
 }

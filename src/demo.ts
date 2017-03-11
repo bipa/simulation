@@ -27,6 +27,8 @@ constructor(){
     this.model = {
         data:this.data,
         variables:variables,
+        stations:[],
+        routes:[],
         entities:this.getEntities(),
         preferences:this.getPreferences()
 
@@ -95,7 +97,7 @@ getPreferences() {
         seed:1234,
         simTime:200,
         useLogging:true,
-        logger:this.logger
+        //logger:this.logger
     }
 
 

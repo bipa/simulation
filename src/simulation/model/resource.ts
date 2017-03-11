@@ -8,6 +8,7 @@ export class Resource extends Entity{
 
     processTime : Distribution;
     state : ResourceStates;
+    nextState : ResourceStates = ResourceStates.idle;
     scheduledState:ScheduledStates;
     seizedBy:Entity;
     idleTime:number=0;
@@ -77,8 +78,7 @@ export class Resource extends Entity{
        this.emitter.emit("seized", entity);
     }
 
-
-    release(enitity:Entity){
+    idle(){
 
         if(this.state === ResourceStates.idle) return;
 
@@ -86,6 +86,18 @@ export class Resource extends Entity{
         this.state = ResourceStates.idle;
         this.seizedBy = null;
         this.emitter.emit("idle", this);
+    }
+
+
+
+    release(){
+
+        if(this.state === ResourceStates.idle) return;
+
+        this.emitter.emit("onBeforeResourceStateChanged", this);
+        this.state = ResourceStates.idle;
+        this.seizedBy = null;
+        this.emitter.emit("released", this);
     }
 
     broken(){
@@ -110,6 +122,44 @@ export class Resource extends Entity{
         this.emitter.emit("other", this);
     }
 
+    activateNextState(nextNextState : ResourceStates = ResourceStates.idle, entity:Entity = null){
+        
+        
+        switch (this.nextState) {
+            case ResourceStates.idle:
+            this.idle();
+                break;
+            case ResourceStates.busy:
+                this.process(entity);
+                break;
+            case ResourceStates.broken:
+                this.broken();
+                break;
+            case ResourceStates.other:
+                this.other();
+                break;
+            case ResourceStates.seized:
+                this.seize(entity);
+                break;
+            case ResourceStates.transfer:
+                this.transfer();
+                break;
+            case ResourceStates.released:
+                this.release();
+                break;
+        
+            default:
+                break;
+        }
+
+
+
+
+        this.nextState = nextNextState; 
+
+        
+    }
+
 
 
 }
@@ -120,6 +170,7 @@ export enum ResourceStates{
         idle =0,
         transfer,
         seized,
+        released,
         busy,
         broken,
         other,

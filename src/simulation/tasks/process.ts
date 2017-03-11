@@ -50,7 +50,7 @@ export class Process {
                 this.resources.push(resource);
             }
             let message = "";
-            this.enqueue(entity);
+            this.queue.enqueue(entity);
             let seizeResult: SeizeResult;
             //seize directly
             
@@ -77,7 +77,7 @@ export class Process {
             }
             else {
                 //Listen for the one time the entity is in front....then seize
-                this.eventEmitter.once(entity.name, async () => {
+                this.queue.eventEmitter.once(entity.name, async () => {
                     
                     let sResult = await this.seizeFromResources(entity, simEvent);
                     simEvent.result  = sResult;
@@ -127,21 +127,21 @@ export class Process {
                 resource.seize(entity);
                 simEvent.result = new SeizeResult(entity, resource);
                 this.simulation.scheduleEvent(simEvent, 0, `${this.resources[0].name} seized by ${entity.name}, now start processing`);
-                this.dequeue();
+                this.queue.dequeue();
                 return simEvent.result;
     }
 
-
+/*
     enqueue(entity: Entity) {
         this.queue.enqueue(entity);
         entity.runtime.enqueueTime = this.simulation.simTime;
         this.simulation.log(`${entity.name} enqueued`, "enqueue")
 
         this.eventEmitter.emit("enqueued")
-    }
+    }*/
 
 
-    dequeue() {
+   /* dequeue() {
         let entity = this.queue.dequeue();
         this.simulation.recorder.recordEntityStat(entity,entity.runtime.enqueueTime,Allocations.wait);
         this.simulation.log(`${entity.name} dequeued`, "dequeue")
@@ -149,13 +149,13 @@ export class Process {
             let nextEntity = this.queue.peek();
             this.eventEmitter.emit(nextEntity.name);
         }
-    }
+    }*/
 
-
+/*
     leave(entity: Entity) {
         this.queue.leave(entity);
         this.eventEmitter.emit("queueChanged")
-    }
+    }*/
 
 
 
@@ -171,10 +171,10 @@ export class Process {
     }
 
 
-    release(entity: Entity, resource: Resource) {
+    release(entity: Entity, resource: Resource, nextState :ResourceStates = ResourceStates.idle) {
         //resource becomese idle, seizedBy becomes null
         //Should have other statistics also here
-        resource.release(entity);
+        resource.activateNextState(nextState);
     }
 
 

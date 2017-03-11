@@ -4,12 +4,17 @@ import {Station} from './model/station';
 import {Route} from './model/route';
 import {Resource} from './model/resource';
 import {SimEvent} from './simEvent';
+
+
 import {Process} from './tasks/process';
+import {Walk} from './tasks/walk';
+import {Seize} from './tasks/seize';
+import { Queue, QueueTypes } from './queues/queue';
+import { AbstractQueue } from './queues/abstractQueue';
 
 
 import {PriorityQueue} from './queues/priorityQueue';
-import {AbstractQueue} from './queues/abstractQueue';
-import {Queue} from './queues/queue';
+
 
 import {Random} from './stats/random';
 import {Units,Distributions,Distribution} from './stats/distributions';
@@ -21,6 +26,7 @@ import { Creator } from './services/creator';
 
 
 
+var PD = require("probability-distributions");   
 const EventEmitter = require('events');
 
 
@@ -96,7 +102,7 @@ export class Simulation{
  
     this.entityModels = new Map<string,any>();
 
-
+    this.creator.createstations(model.stations);
     this.creator.createVariables(model.variables,this);
     this.creator.createResources(model.entities);
     //this.creator.createProcesses(model.processes);
@@ -248,9 +254,6 @@ return promise;
   }
 
 
-process(name:string) : Process{
-    return this.creator.process(name);
-}
 
 dispose(entity:Entity){
   
@@ -325,9 +328,92 @@ addRandomValue(dist:Distribution){
 
 
 
+process(name:string) : Process{
+    return this.creator.process(name);
+}
+
+station(name:string) : Station{
+    return this.creator.station(name);
+}
 
 
+route(from:Station, to :Station) : Route{
+    return this.creator.route(from,to);
+}
 
+
+//Tasks
+
+    walkEvent(entity:Entity,from:Station,to : Station,speed=1): SimEvent{
+        return Walk.walkEvent(this,entity,from,to,speed);
+    }
+
+
+    walk(entity:Entity,from:Station,to : Station,speed=1) : Promise<SimEvent>{
+        return Walk.walk(this,entity,from,to,speed);
+    }
+
+
+    all(event1:SimEvent, event2 : SimEvent) : Promise<SimEvent>
+    {
+       return  event1.deliverAt<event2.deliverAt ? event2.promise : event1.promise;
+    }
+
+
+    yesNo(probability : number) : boolean
+    {
+
+             let sampleProb = PD.rbinom(1,1,probability);
+             return sampleProb[0]==1 ? true : false;
+    }
+
+
+    splitDurationRandomly(duration : Distribution, count: number=2) : Distribution[]
+    {
+        let dists : Distribution[]  = [];
+
+        let totalDuration = this.addRandomValue(duration);
+
+        let splits = PD.runif(count-1,0,1);
+
+        splits.forEach(splitRatio=>{
+            let d = totalDuration*splitRatio;
+            totalDuration -=d;
+            let newDist = new Distribution(Distributions.Constant, duration.unit,d);
+            dists.push(newDist);
+            
+        })
+
+        let lastDist = new Distribution(Distributions.Constant, duration.unit,d);
+        dists.push(lastDist);
+
+
+        return dists;
+
+
+    }
+
+    seizeDelayRelease() : Promise<SimEvent>{
+        return null;
+    }
+
+
+    seizeOneFromManyResources(entity:Entity,resources:Resource[],queueType:QueueTypes = QueueTypes.fifo) : Promise<SimEvent>{
+
+        let seize = new Seize(this,resources,1,queueType);
+        return seize.seize(entity);
+
+
+    }
+
+    seizeOneFromOneResource(entity:Entity,resource:Resource,queueType:QueueTypes = QueueTypes.fifo) : Promise<SimEvent>{
+
+        //Creates a new wueue each time
+            let seize = new Seize(this,[resource],1,queueType);
+            return seize.seize(entity);
+
+
+    }
 
 
 
