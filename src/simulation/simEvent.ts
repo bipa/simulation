@@ -3,21 +3,20 @@
 
 
 
-export class SimEvent{
+export class SimEvent<T extends ISimEventResult> implements ISimEvent{
 
 
 
     deliverAt:number;
     scheduledAt:number;
     cancelled:boolean;
-    promise:Promise<any>
+    promise:Promise<SimEvent<T>>
     type: string;
     message:string;
     id:number;
     isScheduled:boolean = false;
-    callbacks:Function[]
     static count:number = 0;
-    result : any;
+    result : T;
     name:string;
 
 
@@ -32,27 +31,30 @@ export class SimEvent{
         this.id= SimEvent.count;
         this.name  = "event"+this.id;
         SimEvent.count ++;
-        this.callbacks = [];
     }
 
 
-    deliver(){
-        //The event should be executerd, this means that all listeners should be notified
-         for (let i = 0; i < this.callbacks.length; i++) {
 
-            this.callbacks[i]();
-    
-    }
 
+
+
+ 
 
 
 }
 
 
 
-
-    done(onWhenDone:Function,nextEvent:SimEvent=null) : SimEvent{
-           this.callbacks.push(onWhenDone);
-            return nextEvent as SimEvent || this;
+    export interface ISimEventResult{
     }
-}
+
+    export interface ISimEvent{
+        deliverAt:number;
+        id:number;
+        message:string;
+        type: string;
+        name:string;
+        isScheduled:boolean ;
+        promise:Promise<SimEvent<ISimEventResult>>
+        
+    } 

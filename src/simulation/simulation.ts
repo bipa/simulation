@@ -1,15 +1,16 @@
 
 import {Entity,Allocations} from './model/entity';
+import {IEntity} from './model/ientity';
 import {Station} from './model/station';
 import {Route} from './model/route';
 import {Resource} from './model/resource';
-import {SimEvent} from './simEvent';
+import {SimEvent,ISimEvent,ISimEventResult} from './simEvent';
 
 
 import {Process} from './tasks/process';
-import {Walk} from './tasks/walk';
-import {Seize} from './tasks/seize';
-import {Delay} from './tasks/delay';
+import {Walk,WalkResult} from './tasks/walk';
+import {Seize,SeizeResult} from './tasks/seize';
+import {Delay,DelayResult} from './tasks/delay';
 import { Queue, QueueTypes } from './queues/queue';
 import { AbstractQueue } from './queues/abstractQueue';
 
@@ -55,7 +56,7 @@ export class Simulation{
   logRecords:any[];
   stations:Station[];
   routes:Route[];
-  queue:PriorityQueue<SimEvent>;
+  queue:PriorityQueue<ISimEvent>;
   runtime:any;
   random:Random;
   simulationRecords:any[];
@@ -69,8 +70,8 @@ export class Simulation{
   baseUnit:Units;
   eventEmitter:any;
   eventCount:number;
-  unscheduledEvents:Map<number,SimEvent>;
-  concurrentEvents:Promise<SimEvent>[];
+  unscheduledEvents:Map<number,ISimEvent>;
+  concurrentEvents:Promise<ISimEvent>[];
   useLogging:boolean;
 
   constructor(model : any) {
@@ -82,7 +83,7 @@ export class Simulation{
     this.resources = [];
     this.endTime = model.preferences.simTime || 1000;
     this.processes = new Map<string,Process>();
-    this.queue = new PriorityQueue<SimEvent>((queueItem1,queueItem2)=>  { return queueItem1.deliverAt < queueItem2.deliverAt });
+    this.queue = new PriorityQueue<ISimEvent>((queueItem1,queueItem2)=>  { return queueItem1.deliverAt < queueItem2.deliverAt });
     this.runtime={};
     this.logRecords =[];
     this.simulationRecords = [];
@@ -98,7 +99,7 @@ export class Simulation{
     this.data = Object.assign({},model.data);
     this.variables = {};
     this.eventCount = 0;
-    this.unscheduledEvents = new Map<number,SimEvent>();
+    this.unscheduledEvents = new Map<number,ISimEvent>();
     this.concurrentEvents = [];
  
     this.entityModels = new Map<string,any>();
@@ -140,7 +141,7 @@ log(message:string,type:string=null, entity:Entity=null){
 
 
 
-scheduleEvent(simEvent:SimEvent,duration,message:string=null){
+scheduleEvent(simEvent:ISimEvent,duration,message:string=null){
     simEvent.deliverAt = this.simTime+duration;
     //simEvent.scheduledAt = this.simTime;
     simEvent.message = message;
@@ -151,21 +152,21 @@ scheduleEvent(simEvent:SimEvent,duration,message:string=null){
 }
 
 
-setTimer(duration:number=null, type:string = null,message:string=null) : SimEvent{
+setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,message:string=null) : SimEvent<T>{
 
-    let simEvent : SimEvent = null;
+    let simEvent : SimEvent<T> = null;
     if(duration){        
-        simEvent = new SimEvent(this.simTime,this.simTime+duration,type,message);
+        simEvent = new SimEvent<T>(this.simTime,this.simTime+duration,type,message);
         simEvent.isScheduled = true;
         this.queue.add(simEvent);
     }else{
-        simEvent = new SimEvent(this.simTime,this.simTime,type,message);
+        simEvent = new SimEvent<T>(this.simTime,this.simTime,type,message);
         this.unscheduledEvents.set(simEvent.id,simEvent);
     }
 
-    let p =  new Promise<SimEvent>((resolve,reject)=>{
+    let p =  new Promise<SimEvent<T>>((resolve,reject)=>{
 
-            this.eventEmitter.once(simEvent.name,(event:SimEvent)=>{
+            this.eventEmitter.once(simEvent.name,(event:SimEvent<T>)=>{
 
                 resolve(event);
 
@@ -345,20 +346,20 @@ route(from:Station, to :Station) : Route{
 
 //Tasks
 
-    walkEvent(entity:Entity,from:Station,to : Station,speed=1): SimEvent{
+    walkEvent(entity:Entity,from:Station,to : Station,speed=1): SimEvent<WalkResult>{
         return Walk.walkEvent(this,entity,from,to,speed);
     }
 
 
-    walk(entity:Entity,from:Station,to : Station,speed=1) : Promise<SimEvent>{
+    walk(entity:Entity,from:Station,to : Station,speed=1) : Promise<SimEvent<WalkResult>>{
         return Walk.walk(this,entity,from,to,speed);
     }
 
 
-    all(event1:SimEvent, event2 : SimEvent) : Promise<SimEvent>
+    /*all(event1:SimEvent, event2 : SimEvent) : Promise<SimEvent>
     {
        return  event1.deliverAt<event2.deliverAt ? event2.promise : event1.promise;
-    }
+    }*/
 
 
     yesNo(probability : number) : boolean
@@ -394,31 +395,27 @@ route(from:Station, to :Station) : Route{
 
     }
 
-    seizeDelayRelease() : Promise<SimEvent>{
+    seizeDelayRelease() : Promise<SimEvent<SeizeResult>>{
         return null;
     }
 
 
-    seizeOneFromManyResources(entity:Entity,resources:Resource[],queueType:QueueTypes = QueueTypes.fifo) : Promise<SimEvent>{
+    seizeOneFromManyResources(entity:Entity,resources:Resource[],queue:AbstractQueue<IEntity>) : Promise<SimEvent<SeizeResult>>{
 
-        let seize = new Seize(this,resources,1,queueType);
-        return seize.seize(entity);
-
-
+            return Seize.seize(this,entity,resources,1,queue);
     }
 
-    seizeOneFromOneResource(entity:Entity,resource:Resource,queueType:QueueTypes = QueueTypes.fifo) : Promise<SimEvent>{
+    seizeOneFromOneResource(entity:Entity,resource:Resource,queue:AbstractQueue<IEntity>) : Promise<SimEvent<SeizeResult>>{
 
         //Creates a new wueue each time
-            let seize = new Seize(this,[resource],1,queueType);
-            return seize.seize(entity);
+            return Seize.seize(this,entity,[resource],1,queue);
 
 
     }
 
 
 
-    delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded): Promise<SimEvent>{
+    delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded): Promise<SimEvent<DelayResult>>{
        return Delay.delay(this,entity,resource,processTimeDist,allocation);
     }
 

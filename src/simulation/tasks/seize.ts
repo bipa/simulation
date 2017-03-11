@@ -1,54 +1,31 @@
 
 import { Queue, QueueTypes } from '../queues/queue';
 import { AbstractQueue } from '../queues/abstractQueue';
-import { SimEvent } from '../simEvent';
+import { SimEvent,ISimEventResult } from '../simEvent';
 import { Simulation } from '../simulation';
 import { Station } from '../model/station';
 import { Entity, Allocations } from '../model/entity';
+import { IEntity } from '../model/ientity';
 import { Resource, ResourceStates } from '../model/resource';
 import { FifoQueue } from '../queues/fifoQueue';
 
-let EventEmitter = require('events');
 
 
 export class Seize{
         
 
-        queue: AbstractQueue<Entity>;
-        simulation: Simulation;
-        numberOfResourcesToSeize:number;
-        eventEmitter : any;
-        resources
-        
-       constructor(simulation: Simulation, resources: Resource[], numberOfResourcesToSeize : number = 1, queueType: QueueTypes = QueueTypes.fifo){
-            
-           this.simulation = simulation; 
-           switch (queueType) {
-                case QueueTypes.fifo:
-                    this.queue = new FifoQueue<Entity>(simulation);
-                    break;
-                default:
-                    this.queue = new FifoQueue<Entity>(simulation);
-                    break;
-            }
-            
-            this.numberOfResourcesToSeize = numberOfResourcesToSeize;
-            this.eventEmitter = new EventEmitter();
-            this.eventEmitter.setMaxListeners(100);
-            this.resources = resources || new Array<Resource>();
-       }
        
 
 
-       seize(entity: Entity) : Promise<SimEvent>{
+       static seize(simulation: Simulation,entity: Entity, resources: Resource[], numberOfResourcesToSeize : number = 1, queue: AbstractQueue<IEntity> ) : Promise<SimEvent<SeizeResult>>{
 
-            let simEvent  =this.seizeEvent(entity)
+            let simEvent  =Seize.seizeEvent(simulation,entity,resources,numberOfResourcesToSeize,queue);
 
             return simEvent.promise;
        }
 
 
-       seizeEvent(entity: Entity) : SimEvent{
+       static seizeEvent(simulation: Simulation,entity: Entity, resources: Resource[], numberOfResourcesToSeize : number = 1, queue: AbstractQueue<IEntity> ) : SimEvent<SeizeResult>{
              
 
             //resources cannot be null or empty
@@ -56,25 +33,25 @@ export class Seize{
             
             
             let message = "";
-            this.enqueue(entity);
+            queue.enqueue(entity);
             let seizeResult: SeizeResult;
             //seize directly
             
-            let simEvent = this.simulation.setTimer();
+            let simEvent = simulation.setTimer<SeizeResult>();
             simEvent.type="seize";
             simEvent.result = seizeResult;
-            if (this.queue.length == 1) {    
-                let idleResources = this.resources.filter(r => { return r.state === ResourceStates.idle });
+            if (queue.length == 1) {    
+                let idleResources = resources.filter(r => { return r.state === ResourceStates.idle });
                 if (idleResources && idleResources.length > 0) {
-                    let resource = this.resources[0];
-                    let sResult =   this.inner_seize(entity,resource,simEvent);
+                    let resource = resources[0];
+                    let sResult =   Seize.inner_seize(simulation,entity,resource,simEvent,queue);
                     simEvent.result  = sResult;
                 }
                 else {
-                    this.resources.forEach(r => {
+                    resources.forEach(r => {
                     r.emitter.once("idle", resource => {
                         if (!simEvent.isScheduled) {
-                            let sResult =   this.inner_seize(entity,resource,simEvent);
+                            let sResult =   Seize.inner_seize(simulation,entity,resource,simEvent,queue);
                             simEvent.result  = sResult;
                         }
                         });
@@ -83,9 +60,9 @@ export class Seize{
             }
             else {
                 //Listen for the one time the entity is in front....then seize
-                this.eventEmitter.once(entity.name, async () => {
+                queue.eventEmitter.once(entity.name, async () => {
                     
-                    let sResult = await this.seizeFromResources(entity, simEvent);
+                    let sResult = await Seize.seizeFromResources(simulation,entity, simEvent,resources,queue);
                     simEvent.result  = sResult;
 
                 })
@@ -94,24 +71,24 @@ export class Seize{
        }
  
 
-    seizeFromResources(entity: Entity, simEvent: SimEvent) : Promise<SeizeResult>{
+    static seizeFromResources(simulation: Simulation,entity: Entity, simEvent: SimEvent<SeizeResult>,resources: Resource[], queue: AbstractQueue<IEntity> ) : Promise<SeizeResult>{
 
         let promise = new Promise<SeizeResult>((resolve,reject)=>{
 
 
 
 
-            let idleResources = this.resources.filter(r => { return r.state === ResourceStates.idle });
+            let idleResources = resources.filter(r => { return r.state === ResourceStates.idle });
             if (idleResources && idleResources.length > 0) {
-                    let resource = this.resources[0];
-                    let sResult =   this.inner_seize(entity,resource,simEvent);
+                    let resource = resources[0];
+                    let sResult =   Seize.inner_seize(simulation,entity,resource,simEvent,queue);
                     resolve(sResult);
             }
             else {
-                this.resources.forEach(r => {
+                resources.forEach(r => {
                 r.emitter.once("idle", resource => {
                     if (!simEvent.isScheduled) {
-                          let sResult =   this.inner_seize(entity,resource,simEvent);
+                          let sResult =   Seize.inner_seize(simulation,entity,resource,simEvent,queue);
                           resolve(sResult);
                     }
             });
@@ -126,38 +103,21 @@ export class Seize{
 
     }
 
-    inner_seize(entity: Entity, resource: Resource, simEvent: SimEvent) :SeizeResult {
+   static  inner_seize(simulation: Simulation,entity: Entity, resource: Resource, simEvent: SimEvent<SeizeResult>, queue: AbstractQueue<IEntity> ) :SeizeResult {
                 resource.seize(entity);
                 simEvent.result = new SeizeResult(entity, resource);
-                this.simulation.scheduleEvent(simEvent, 0, `${this.resources[0].name} seized by ${entity.name}, now start processing`);
-                this.dequeue();
+                simulation.scheduleEvent(simEvent, 0, `${resource.name} seized by ${entity.name}, now start processing`);
+                queue.dequeue();
                 return simEvent.result;
     }
 
 
-    enqueue(entity: Entity) {
-        this.queue.enqueue(entity);
-        entity.runtime.enqueueTime = this.simulation.simTime;
-        this.simulation.log(`${entity.name} enqueued`, "enqueue")
-
-        this.eventEmitter.emit("enqueued")
-    }
-
-
-    dequeue() {
-        let entity = this.queue.dequeue();
-        this.simulation.recorder.recordEntityStat(entity,entity.runtime.enqueueTime,Allocations.wait);
-        this.simulation.log(`${entity.name} dequeued`, "dequeue")
-        if (this.queue.length > 0) {
-            let nextEntity = this.queue.peek();
-            this.eventEmitter.emit(nextEntity.name);
-        }
-    }
+  
 
 }
 
 
-export class SeizeResult {
+export class SeizeResult implements ISimEventResult {
 
     entity: Entity;
     resources: Resource[];

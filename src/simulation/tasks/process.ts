@@ -6,6 +6,7 @@ import { Resource, ResourceStates } from '../model/resource';
 import { Simulation } from '../simulation';
 import { Distribution } from '../stats/distributions';
 import { SimEvent } from '../simEvent';
+import { SeizeResult } from './seize';
 
 
 let EventEmitter = require('events');
@@ -39,7 +40,7 @@ export class Process {
         this.resources = resources || new Array<Resource>();
         this.simulation = simulation;
     }
-    async seize(entity: Entity, resource: Resource = null): Promise<SimEvent> {
+    async seize(entity: Entity, resource: Resource = null): Promise<SimEvent<SeizeResult>> {
 
 
 
@@ -54,7 +55,7 @@ export class Process {
             let seizeResult: SeizeResult;
             //seize directly
             
-            let simEvent = this.simulation.setTimer();
+            let simEvent = this.simulation.setTimer<SeizeResult>();
             simEvent.type="seize";
             simEvent.result = seizeResult;
             if (this.queue.length == 1) {    
@@ -91,7 +92,7 @@ export class Process {
     }
 
 
-    seizeFromResources(entity: Entity, simEvent: SimEvent) : Promise<SeizeResult>{
+    seizeFromResources(entity: Entity, simEvent: SimEvent<SeizeResult>) : Promise<SeizeResult>{
 
         let promise = new Promise<SeizeResult>((resolve,reject)=>{
 
@@ -123,7 +124,7 @@ export class Process {
 
     }
 
-    inner_seize(entity: Entity, resource: Resource, simEvent: SimEvent) :SeizeResult {
+    inner_seize(entity: Entity, resource: Resource, simEvent: SimEvent<SeizeResult>) :SeizeResult {
                 resource.seize(entity);
                 simEvent.result = new SeizeResult(entity, resource);
                 this.simulation.scheduleEvent(simEvent, 0, `${this.resources[0].name} seized by ${entity.name}, now start processing`);
@@ -135,16 +136,7 @@ export class Process {
 
 
 
-    delay(entity: Entity, resource: Resource, processTimeDist: Distribution): Promise<SimEvent> {
-        let processTime = this.simulation.addRandomValue(processTimeDist);
-        let timeStampBefore = this.simulation.simTime;
-        let simEvent =  this.simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`);
-        resource.process(entity);       
-        this.simulation.eventEmitter.once(simEvent.name,sEvent=>{
-            this.simulation.recorder.recordEntityStat(entity,timeStampBefore,this.allocation);
-        });
-        return simEvent.promise
-    }
+   
 
 
     release(entity: Entity, resource: Resource, nextState :ResourceStates = ResourceStates.idle) {
@@ -163,17 +155,3 @@ export class Process {
 
 }
 
-
-export class SeizeResult {
-
-    entity: Entity;
-    resources: Resource[];
-    resource:Resource;
-
-
-    constructor(entity: Entity,resource:Resource = null, resources: Resource[] = null) {
-        this.entity = entity;
-        this.resources = resources;
-        this.resource = resource;
-    }
-}

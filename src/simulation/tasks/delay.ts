@@ -1,6 +1,6 @@
 
 
-import { SimEvent } from '../simEvent';
+import { SimEvent , ISimEventResult} from '../simEvent';
 import { Simulation } from '../simulation';
 import { Entity, Allocations } from '../model/entity';
 import { Resource, ResourceStates } from '../model/resource';
@@ -15,7 +15,7 @@ export class Delay{
 
 
        static delay(simulation:Simulation,entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded) 
-       : Promise<SimEvent>{
+       : Promise<SimEvent<DelayResult>>{
 
             let simEvent  =Delay.delayEvent(simulation,entity,resource,processTimeDist,allocation);
 
@@ -24,12 +24,12 @@ export class Delay{
 
 
        static delayEvent(simulation:Simulation,entity: Entity, resource: Resource, 
-                    processTimeDist,allocation:Allocations = Allocations.valueAdded) : SimEvent{
+                    processTimeDist,allocation:Allocations = Allocations.valueAdded) : SimEvent<DelayResult>{
            
            
             let processTime = simulation.addRandomValue(processTimeDist);
             let timeStampBefore = simulation.simTime;
-            let simEvent =  simulation.setTimer(processTime, this.name, `${entity.name} processed by ${resource.name}`);
+            let simEvent =  simulation.setTimer<DelayResult>(processTime, "delay", `${entity.name} processed by ${resource.name}`);
             resource.process(entity);       
             simulation.eventEmitter.once(simEvent.name,sEvent=>{
                 simulation.recorder.recordEntityStat(entity,timeStampBefore,allocation);
@@ -40,5 +40,9 @@ export class Delay{
 
        }
 
+
+}
+
+export  class DelayResult implements ISimEventResult{
 
 }
