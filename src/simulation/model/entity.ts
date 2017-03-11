@@ -27,7 +27,7 @@ export class Entity implements IEntity{
     emitter:any;
     speed:number;
 
-
+    private lastEnqueuedAt:number =0;
 
     constructor(entityModel:any){
         this.type = entityModel.type;
@@ -46,12 +46,15 @@ export class Entity implements IEntity{
 
 
     enqueue(timestamp:number){
-
+        this.lastEnqueuedAt = timestamp;
     }
 
 
     dequeue(timestamp:number){
-
+        this.waitTime+=timestamp-this.lastEnqueuedAt;
+        if(this.waitTime>0){
+            let i =5;
+        }
     }
     
 }

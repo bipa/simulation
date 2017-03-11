@@ -56,7 +56,7 @@ export class AbstractQueue<T extends IEntity>{
         this.eventEmitter.emit("dequeued",item)
         this.countLeft++;
         this.current--;
-        item.dequeue(timeStamp);
+        item.dequeue(simTime);
         //Check if there is more items in the queue, and notice if so, by the name of the enitity
         if (this.length > 0) {
             let nextItem = this.peek();
