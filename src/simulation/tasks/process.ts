@@ -40,7 +40,7 @@ export class Process {
         this.resources = resources || new Array<Resource>();
         this.simulation = simulation;
     }
-    async seize(entity: Entity, resource: Resource = null): Promise<SimEvent<SeizeResult>> {
+    async seize(entity: Entity, resource: Resource = null): Promise<SeizeResult> {
 
 
 

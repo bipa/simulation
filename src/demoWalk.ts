@@ -71,7 +71,7 @@ constructor(){
 
 
 
-                    let simEvent = await process.seize(patient,ctx.runtime.doctor1);
+                    let seizeResult = await process.seize(patient,ctx.runtime.doctor1);
 
                     //The patient needs to walk to the office room
                     await ctx.walk(patient,patient.currentStation,ctx.data.stations.office);
@@ -82,19 +82,19 @@ constructor(){
                     {
                          let processTimes  = ctx.addRandomValue(ctx.data.doctorProcessTime);
                          //So the doctor processes the patient of half the time
-                         await ctx.delay(patient,simEvent.result.resource,processTimes[0]);                
+                         await ctx.delay(patient,seizeResult.resource,processTimes[0]);                
                          //The doctor needs to go to the storage
                          await ctx.walk(ctx.runtime.doctor1 as Resource,ctx.data.stations.office,ctx.data.stations.storage )
                          //The doctor gets the correct medicine
 
-                         process.release(patient,simEvent.result.resource);
+                         process.release(patient,seizeResult.resource);
                          
                          ctx.dispose(patient);
                     }
                     else{
-                        await ctx.delay(patient,simEvent.result.resource,ctx.data.machineProcessTime);                
+                        await ctx.delay(patient,seizeResult.resource,ctx.data.machineProcessTime);                
                 
-                        process.release(patient,simEvent.result.resource);
+                        process.release(patient,seizeResult.resource);
                         
                         ctx.dispose(patient);
                     }

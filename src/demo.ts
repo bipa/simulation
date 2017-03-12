@@ -38,7 +38,7 @@ constructor(){
 
 }
 
-
+ 
  
  
 
@@ -51,13 +51,15 @@ constructor(){
                 dist:this.data.partArrivalDist,
                 onCreateModel:async (part,ctx:Simulation)=>{
 
-                    
+                    let enqueueResult =await ctx.enqueue(part,ctx.queue("processQueue"));
 
-                    let simEvent = await ctx.process("processPart").seize(part,ctx.runtime.worker1);
+                    let seizeResult = await ctx.seizeResource(part,ctx.runtime.worker1);
 
-                    await ctx.delay(part,simEvent.result.resource,ctx.data.machineProcessTime);                
+                    let dequeueResult =await ctx.dequeue(part,ctx.queue("processQueue"));
+
+                    await ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 
-                    ctx.process("processPart").release(part,simEvent.result.resource);
+                    ctx.process("processPart").release(part,seizeResult.resource);
                     
                     ctx.dispose(part);
                   

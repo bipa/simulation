@@ -15,7 +15,7 @@ export class Delay{
 
 
        static delay(simulation:Simulation,entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded) 
-       : Promise<SimEvent<DelayResult>>{
+       : Promise<DelayResult>{
 
             let simEvent  =Delay.delayEvent(simulation,entity,resource,processTimeDist,allocation);
 

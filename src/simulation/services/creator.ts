@@ -87,7 +87,7 @@ export class Creator{
  async scheduleNextCreation(entityModel:any){
 
           let createAt = this.simulation.addRandomValue(entityModel.creation.dist);
-          this.simulation.setTimer(createAt,"creation",entityModel.name).promise.then((simEvent)=>{
+          this.simulation.setTimer(createAt,"creation",entityModel.type).promise.then((simEvent)=>{
                         this.createModel(entityModel);
 
                     })
@@ -120,7 +120,7 @@ export class Creator{
                 if(entityModel.creation.repeatInterval){
                     
                     let repeatInterval = this.simulation.addRandomValue(entityModel.creation.repeatInterval);
-                    this.simulation.setTimer(repeatInterval,"creation",entityModel.name).promise.then((simEvent)=>{
+                    this.simulation.setTimer(repeatInterval,"creation",entityModel.type).promise.then((simEvent)=>{
                         this.createModel(entityModel);
                         
                         
@@ -139,19 +139,12 @@ export class Creator{
 
 
     createEntityInstance(entityModel){
-            if(entityModel.creation.runBatch){
                 let modelInstances  = [];
-                for (let i = 0; i < entityModel.creation.batchSize; i++) {
+                entityModel.creation.quantity = entityModel.creation.quantity || 1;
+                for (let i = 0; i < entityModel.creation.quantity ; i++) {
                     
-                   this.simulation.entities.add( this.createSingleItem(entityModel));
-                    
+                        this.simulation.entities.add( this.createSingleItem(entityModel));
                 }
-            }
-            else{
-                this.simulation.entities.add(this.createSingleItem(entityModel));
-            }
-            
-            
         }
 
 
@@ -221,7 +214,7 @@ export class Creator{
             //Schedule the next plannedEvent
             let repeatInterval = this.simulation.addRandomValue(plannedEvent.repeatInterval);
             
-            let res =await this.simulation.setTimer(repeatInterval).promise
+            await this.simulation.setTimer(repeatInterval).promise
                 
                  this.schedulePlannedEvent(plannedEvent,modelInstance);
                 //Log the execution of the planned event
@@ -241,7 +234,7 @@ export class Creator{
             let nextEventAt = this.simulation.addRandomValue(randomEvent.dist);
             this.randomEventOccured(randomEvent,modelInstance);
          
-            let res =await this.simulation.setTimer(nextEventAt).promise;
+           await this.simulation.setTimer(nextEventAt).promise;
                     this.scheduleRandomEvent(randomEvent,modelInstance);
              
             

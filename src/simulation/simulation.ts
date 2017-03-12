@@ -11,11 +11,14 @@ import {Process} from './tasks/process';
 import {Walk,WalkResult} from './tasks/walk';
 import {Seize,SeizeResult} from './tasks/seize';
 import {Delay,DelayResult} from './tasks/delay';
+import {Enqueue,EnqueueResult} from './tasks/enqueue';
+import {Dequeue,DequeueResult} from './tasks/dequeue';
 import { Queue, QueueTypes } from './queues/queue';
 import { AbstractQueue } from './queues/abstractQueue';
 
 
 import {PriorityQueue} from './queues/priorityQueue';
+import { FifoQueue } from './queues/fifoQueue';
 
 
 import {Random} from './stats/random';
@@ -56,7 +59,7 @@ export class Simulation{
   logRecords:any[];
   stations:Station[];
   routes:Route[];
-  queue:PriorityQueue<ISimEvent>;
+  _queue:PriorityQueue<ISimEvent>;
   runtime:any;
   random:Random;
   simulationRecords:any[];
@@ -66,12 +69,14 @@ export class Simulation{
   recorder:Recorder;
   creator : Creator;
 
+  queues : Map<string,AbstractQueue<IEntity>>;
+
   endTime:number;
   baseUnit:Units;
   eventEmitter:any;
   eventCount:number;
   unscheduledEvents:Map<number,ISimEvent>;
-  concurrentEvents:Promise<ISimEvent>[];
+  concurrentEvents:Promise<any>[];
   useLogging:boolean;
 
   constructor(model : any) {
@@ -83,7 +88,8 @@ export class Simulation{
     this.resources = [];
     this.endTime = model.preferences.simTime || 1000;
     this.processes = new Map<string,Process>();
-    this.queue = new PriorityQueue<ISimEvent>((queueItem1,queueItem2)=>  { return queueItem1.deliverAt < queueItem2.deliverAt });
+    this.queues = new Map<string,AbstractQueue<IEntity>>();
+    this._queue = new PriorityQueue<ISimEvent>((queueItem1,queueItem2)=>  { return queueItem1.deliverAt < queueItem2.deliverAt });
     this.runtime={};
     this.logRecords =[];
     this.simulationRecords = [];
@@ -146,7 +152,7 @@ scheduleEvent(simEvent:ISimEvent,duration,message:string=null){
     //simEvent.scheduledAt = this.simTime;
     simEvent.message = message;
     simEvent.isScheduled = true;
-    this.queue.add(simEvent);
+    this._queue.add(simEvent);
     this.unscheduledEvents.delete(simEvent.id);
     this.concurrentEvents.push(simEvent.promise);
 }
@@ -158,27 +164,24 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
     if(duration){        
         simEvent = new SimEvent<T>(this.simTime,this.simTime+duration,type,message);
         simEvent.isScheduled = true;
-        this.queue.add(simEvent);
+        this._queue.add(simEvent);
     }else{
         simEvent = new SimEvent<T>(this.simTime,this.simTime,type,message);
         this.unscheduledEvents.set(simEvent.id,simEvent);
     }
 
-    let p =  new Promise<SimEvent<T>>((resolve,reject)=>{
+    let k =  new Promise<T>((resolve,reject)=>{
 
             this.eventEmitter.once(simEvent.name,(event:SimEvent<T>)=>{
 
-                resolve(event);
+                resolve(event.result);
 
             })
-
-
-   })
-   .then(e=>{
-      return simEvent;
+    }).then(e=>{
+      return simEvent.result;
    });
-
-   simEvent.promise = p;
+ 
+   simEvent.promise = k; 
 
     if(simEvent.isScheduled && simEvent.deliverAt === this.simTime){
         this.concurrentEvents.push(simEvent.promise);
@@ -192,7 +195,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
  async nextStep()  {
     
    
-      if(this.queue.size ===0 )
+      if(this._queue.size ===0 )
       {
           this.finalize();
           this.eventEmitter.emit("done", true);
@@ -200,7 +203,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
       }
       
       
-      let event = this.queue.poll();
+      let event = this._queue.poll();
       this.simTime = event.deliverAt;
       if (event.deliverAt > this.endTime)  {
           this.finalize();
@@ -328,6 +331,30 @@ addRandomValue(dist:Distribution){
         
 
 
+createQueue(name : string,queueType:QueueTypes = QueueTypes.fifo) : AbstractQueue<IEntity>{
+    
+        if(this.queues.has(name)) return this.queue(name);
+
+        let queue: AbstractQueue<IEntity>;
+    
+        switch (queueType) {
+            case QueueTypes.fifo:
+                queue = new FifoQueue<IEntity>(this);
+                break;
+            default:
+                queue = new FifoQueue<IEntity>(this);
+           
+               break;
+        }
+        this.queues.set(name,queue);
+        return queue; 
+}
+
+queue(name:string,queueType:QueueTypes = QueueTypes.fifo) : AbstractQueue<IEntity>{
+    if(!this.queues.has(name)) return this.createQueue(name,queueType);
+    return this.queues.get(name);
+}
+
 
 
 process(name:string) : Process{
@@ -400,26 +427,33 @@ route(from:Station, to :Station) : Route{
     }
 
 
-    seizeOneFromManyResources(entity:Entity,resources:Resource[],queue:AbstractQueue<IEntity>) : Promise<SimEvent<SeizeResult>>{
+    seizeOneFromManyResources(entity:Entity,resources:Resource[]) : Promise<SeizeResult>{
 
-            return Seize.seize(this,entity,resources,1,queue);
+            return Seize.seize(this,entity,resources,1);
     }
 
-    seizeOneFromOneResource(entity:Entity,resource:Resource,queue:AbstractQueue<IEntity>) : Promise<SimEvent<SeizeResult>>{
+    seizeResource(entity:Entity,resource:Resource) : Promise<SeizeResult>{
 
         //Creates a new wueue each time
-            return Seize.seize(this,entity,[resource],1,queue);
+            return Seize.seize(this,entity,[resource],1);
 
 
     }
 
 
 
-    delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded): Promise<SimEvent<DelayResult>>{
+    delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded): Promise<DelayResult>{
        return Delay.delay(this,entity,resource,processTimeDist,allocation);
     }
 
 
+    enqueue(entity: Entity,queue :AbstractQueue<IEntity>): Promise<EnqueueResult>{
+        return Enqueue.enqueue(this,entity,queue);
+    }
+
+    dequeue(entity: Entity,queue :AbstractQueue<IEntity>): Promise<DequeueResult>{
+        return Dequeue.dequeue(this,entity,queue);
+    }
 
 
 }

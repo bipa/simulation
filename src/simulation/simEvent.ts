@@ -10,7 +10,7 @@ export class SimEvent<T extends ISimEventResult> implements ISimEvent{
     deliverAt:number;
     scheduledAt:number;
     cancelled:boolean;
-    promise:Promise<SimEvent<T>>
+    promise:Promise<T>
     type: string;
     message:string;
     id:number;
@@ -55,6 +55,6 @@ export class SimEvent<T extends ISimEventResult> implements ISimEvent{
         type: string;
         name:string;
         isScheduled:boolean ;
-        promise:Promise<SimEvent<ISimEventResult>>
+        promise:Promise<ISimEventResult>
         
     } 

@@ -1,14 +1,10 @@
 
 
-import { Queue, QueueTypes } from '../queues/queue';
 import { AbstractQueue } from '../queues/abstractQueue';
 import { SimEvent,ISimEventResult } from '../simEvent';
 import { Simulation } from '../simulation';
-import { Station } from '../model/station';
-import { Entity, Allocations } from '../model/entity';
+import { Entity } from '../model/entity';
 import { IEntity } from '../model/ientity';
-import { Resource, ResourceStates } from '../model/resource';
-import { FifoQueue } from '../queues/fifoQueue';
 
 
 export class Enqueue{
@@ -19,7 +15,7 @@ export class Enqueue{
 
 
        static enqueue(simulation:Simulation,entity: Entity,  queue: AbstractQueue<IEntity> ) 
-       : Promise<SimEvent<EnqueueResult>>{
+       : Promise<EnqueueResult>{
 
             let simEvent  =Enqueue.enqueueEvent(simulation,entity,queue);
 
@@ -29,9 +25,22 @@ export class Enqueue{
 
        static enqueueEvent(simulation:Simulation,entity: Entity,  queue: AbstractQueue<IEntity>) : SimEvent<EnqueueResult>{
            
-            let simEvent = simulation.setTimer();
+            let simEvent = simulation.setTimer<EnqueueResult>();
             simEvent.type="enqueue";
-           simEvent.result = entity;
+            simEvent.result = new EnqueueResult(entity);
+            queue.enqueue(entity);
+            if (queue.length == 1) {    
+                simulation.scheduleEvent(simEvent, 0, `${entity.name} is now in front of ${queue.name}`);      
+            }
+            else{
+                 //Listen for the one time the entity is in front....then seize
+                queue.eventEmitter.once(entity.name, async () => {        
+                        simulation.scheduleEvent(simEvent, 0, `${entity.name} is now in front of ${queue.name}`);      
+                })
+            }
+
+
+           
            
             return simEvent;
 
@@ -44,4 +53,9 @@ export class Enqueue{
 
 export class EnqueueResult implements ISimEventResult{
 
+        entity:Entity
+
+        constructor(entity : Entity){
+            this.entity = entity;
+        }
 }
