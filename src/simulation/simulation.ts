@@ -82,7 +82,6 @@ export class Simulation{
   eventEmitter:any;
   eventCount:number;
   unscheduledEvents:Map<number,ISimEvent>;
-  concurrentEvents:Promise<any>[];
   useLogging:boolean;
 
   constructor(model : any) {
@@ -112,7 +111,6 @@ export class Simulation{
     this.variables = {};
     this.eventCount = 0;
     this.unscheduledEvents = new Map<number,ISimEvent>();
-    this.concurrentEvents = [];
  
     this.entityModels = new Map<string,any>();
 
@@ -165,7 +163,6 @@ scheduleEvent(simEvent:ISimEvent,duration,message:string=null){
     simEvent.isScheduled = true;
     this._queue.add(simEvent);
     this.unscheduledEvents.delete(simEvent.id);
-    this.concurrentEvents.push(simEvent.promise);
 }
  
 
@@ -206,9 +203,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
  
    simEvent.promise = k; 
 
-    if(simEvent.isScheduled && simEvent.deliverAt === this.simTime){
-        this.concurrentEvents.push(simEvent.promise);
-    }
+   
 
     return simEvent;
 
@@ -242,16 +237,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
         let res = await event.promise;
           this.nextStep();
 
-     /*     
-      if(this.concurrentEvents.length>0){
-            let r   = await Promise.all(this.concurrentEvents);
-            this.concurrentEvents.length = 0;
-            this.nextStep();
-
-      }else{
-          let res = await event.promise;
-          this.nextStep();
-      }*/
+   
     
      
 
