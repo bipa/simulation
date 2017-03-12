@@ -25,13 +25,11 @@ export class Dequeue{
 
        static dequeueEvent(simulation:Simulation,entity: Entity,  queue: AbstractQueue<IEntity>) : SimEvent<DequeueResult>{
            
-            let simEvent = simulation.setTimer<DequeueResult>(0);
-            simEvent.type="dequeue";
-            simEvent.result = new DequeueResult(entity);
-            simulation.scheduleEvent(simEvent, 0, `${entity.name} has dequeued ${queue.name}`);      
+            let simEvent = simulation.setTimer<DequeueResult>(0,"dequeue",`${entity.name} has dequeued ${queue.name}`);
+           simEvent.result = new DequeueResult(entity);      
             queue.dequeue();
-            simulation.eventEmitter.once(simEvent.name,sEvent=>{
-            });
+            //simulation.scheduleEvent(simEvent, 0, `${entity.name} has dequeued ${queue.name}`);
+           
 
 
             return simEvent;

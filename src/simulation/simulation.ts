@@ -13,6 +13,10 @@ import {Seize,SeizeResult} from './tasks/seize';
 import {Delay,DelayResult} from './tasks/delay';
 import {Enqueue,EnqueueResult} from './tasks/enqueue';
 import {Dequeue,DequeueResult} from './tasks/dequeue';
+import {Release,ReleaseResult} from './tasks/release';
+
+
+
 import { Queue, QueueTypes } from './queues/queue';
 import { AbstractQueue } from './queues/abstractQueue';
 
@@ -49,6 +53,8 @@ export class Simulation{
 
   variables:any;
   data:any;
+
+  static epsilon : number = 0.00000001;
 
   simTime:number;
 
@@ -148,6 +154,11 @@ log(message:string,type:string=null, entity:Entity=null){
 
 
 scheduleEvent(simEvent:ISimEvent,duration,message:string=null){
+
+    if(duration==0){
+                    simEvent.isConcurrent = true;
+                    duration = Simulation.epsilon;
+    }
     simEvent.deliverAt = this.simTime+duration;
     //simEvent.scheduledAt = this.simTime;
     simEvent.message = message;
@@ -156,9 +167,11 @@ scheduleEvent(simEvent:ISimEvent,duration,message:string=null){
     this.unscheduledEvents.delete(simEvent.id);
     this.concurrentEvents.push(simEvent.promise);
 }
-
+ 
 
 setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,message:string=null) : SimEvent<T>{
+
+ 
 
     let simEvent : SimEvent<T> = null;
     if(duration){        
@@ -166,8 +179,18 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
         simEvent.isScheduled = true;
         this._queue.add(simEvent);
     }else{
-        simEvent = new SimEvent<T>(this.simTime,this.simTime,type,message);
-        this.unscheduledEvents.set(simEvent.id,simEvent);
+        if(duration==0){
+            simEvent = new SimEvent<T>(this.simTime,this.simTime+duration,type,message);
+            simEvent.isConcurrent = true;
+            duration = Simulation.epsilon;
+            this._queue.add(simEvent);
+        }else{
+            
+            simEvent = new SimEvent<T>(this.simTime,this.simTime,type,message);
+            this.unscheduledEvents.set(simEvent.id,simEvent);
+        }
+       
+
     }
 
     let k =  new Promise<T>((resolve,reject)=>{
@@ -200,7 +223,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
           this.finalize();
           this.eventEmitter.emit("done", true);
           return;
-      }
+      } 
       
       
       let event = this._queue.poll();
@@ -211,12 +234,15 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
           return;
       };
       this.eventCount++;
-      this.simTime = event.deliverAt;
+      event.isConcurrent ? this.simTime = event.deliverAt-Simulation.epsilon : this.simTime  = event.deliverAt;
       this.log(event.message,event.type);
       //if(this.eventCount>1)
-    this.eventEmitter.emit(event.name, event);
+      this.eventEmitter.emit(event.name, event);
         
-        
+        let res = await event.promise;
+          this.nextStep();
+
+     /*     
       if(this.concurrentEvents.length>0){
             let r   = await Promise.all(this.concurrentEvents);
             this.concurrentEvents.length = 0;
@@ -225,7 +251,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
       }else{
           let res = await event.promise;
           this.nextStep();
-      }
+      }*/
     
      
 
@@ -257,16 +283,6 @@ return promise;
 
    
   }
-
-
-
-dispose(entity:Entity){
-  
-    //keep some stats here
-    entity.dispose(this.simTime);
-    this.recorder.recordEntityDispose(entity);
-    this.entities.delete(entity);
-}
 
 
 
@@ -440,6 +456,9 @@ route(from:Station, to :Station) : Route{
 
     }
 
+    release(entity:Entity,resource:Resource) : Promise<ReleaseResult>{
+        return Release.release(this,entity,resource);
+    }
 
 
     delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded): Promise<DelayResult>{
@@ -454,6 +473,16 @@ route(from:Station, to :Station) : Route{
     dequeue(entity: Entity,queue :AbstractQueue<IEntity>): Promise<DequeueResult>{
         return Dequeue.dequeue(this,entity,queue);
     }
+
+
+dispose(entity:Entity){
+  
+    //keep some stats here
+    entity.dispose(this.simTime);
+    this.recorder.recordEntityDispose(entity);
+    this.entities.delete(entity);
+}
+
 
 
 }

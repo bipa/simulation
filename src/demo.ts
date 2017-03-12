@@ -51,17 +51,17 @@ constructor(){
                 dist:this.data.partArrivalDist,
                 onCreateModel:async (part,ctx:Simulation)=>{
 
-                    let enqueueResult =await ctx.enqueue(part,ctx.queue("processQueue"));
+                    let enqueueResult = await ctx.enqueue(part,ctx.queue("processQueue"));
 
-                    let seizeResult = await ctx.seizeResource(part,ctx.runtime.worker1);
+                    let seizeResult   = await ctx.seizeResource(part,ctx.runtime.worker1);
 
-                    let dequeueResult =await ctx.dequeue(part,ctx.queue("processQueue"));
+                    let dequeueResult = await ctx.dequeue(part,ctx.queue("processQueue"));
 
-                    await ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                    let delayResult   = await ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 
-                    ctx.process("processPart").release(part,seizeResult.resource);
+                    let releaseResult = await ctx.release(part,seizeResult.resource);
                     
-                    ctx.dispose(part);
+                    let disposeResult = await ctx.dispose(part);
                   
 
 
@@ -72,12 +72,6 @@ constructor(){
         {
             type:"worker",
             name:"worker1",
-            isResource:true
-        },
-        
-        {
-            type:"worker2",
-            quantity:10,
             isResource:true
         }
 

@@ -71,7 +71,7 @@ constructor(){
 
 
 
-                    let seizeResult = await process.seize(patient,ctx.runtime.doctor1);
+                    let seizeResult   = await ctx.seizeResource(patient,ctx.runtime.worker1);
 
                     //The patient needs to walk to the office room
                     await ctx.walk(patient,patient.currentStation,ctx.data.stations.office);
