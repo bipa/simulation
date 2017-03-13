@@ -106,7 +106,7 @@ logger =(message:string)=>{
 
   async simulate() {
         let simulation = new Simulation(this.model);
-        await simulation.simulate();
+        let simRes = await simulation.simulate();
         simulation.report();
 
 }

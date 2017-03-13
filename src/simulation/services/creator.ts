@@ -304,7 +304,7 @@ export class Creator{
             return process;
         else
         {
-            process =  new Process(this.simulation,{name:name});
+            process =  new Process(this.simulation,name);
             this.simulation.processes.set(process.name,process);
             return process;
         }

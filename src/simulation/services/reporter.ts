@@ -68,7 +68,7 @@ reportEntities(simulation:Simulation){
             this.reporter();
             this.reportRecord("Antall WIP:   ",entityStats.countStats.sizeSeries.report());
             this.reportRecord("Varighet:     ",entityStats.countStats.durationSeries.report());
-            this.reportRecord("Total tid:    ",entityStats.totalTime.report());
+           // this.reportRecord("Total tid:    ",entityStats.totalTime.report());
             this.reportRecord("   VA Tid:    ",entityStats.valueAddedTime.report());
             this.reportRecord("   NVA time:  ",entityStats.nonValueAddedTime.report());
             this.reportRecord("   Transfer:  ",entityStats.transferTime.report());
@@ -96,18 +96,19 @@ reportResources(simulation:Simulation){
             this.reportRecord("Effektiv:      ",resourceStats.instantaneousUtilization.report());
             this.reporter(`       Ideell:                  ${resourceStats.scheduledUtilization.toFixed(4)}`);
             this.reporter();
-            this.reporter(`     Total tid:        ${resourceStats.totalScheduledTime.toFixed(0)}`);
-            this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.totalScheduledTime).toFixed(2)}`);
-            this.reporter(`         Busy:         ${(resourceStats.totalBusyTime/resourceStats.totalScheduledTime).toFixed(2)}`);
-            this.reporter(`         Transfer:     ${(resourceStats.totalTransferTime/resourceStats.totalScheduledTime).toFixed(2)}`);
-            this.reporter(`         Broken:       ${(resourceStats.totalBrokenTime/resourceStats.totalScheduledTime).toFixed(2)}`);
-            this.reporter(`         Other:        ${(resourceStats.totalOtherTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`     Total tid:        ${resourceStats.simTime.toFixed(0)}`);
+            this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.simTime).toFixed(2)}`);
+            this.reporter(`         Busy:         ${(resourceStats.totalBusyTime/resourceStats.simTime).toFixed(2)}`);
+            this.reporter(`         Transfer:     ${(resourceStats.totalTransferTime/resourceStats.simTime).toFixed(2)}`);
+            this.reporter(`         Broken:       ${(resourceStats.totalBrokenTime/resourceStats.simTime).toFixed(2)}`);
+            this.reporter(`         Other:        ${(resourceStats.totalOtherTime/resourceStats.simTime).toFixed(2)}`);
+            this.reporter(`         Unscheduled:  ${(resourceStats.totalUnScheduledTime/resourceStats.simTime).toFixed(2)}`);
             this.reporter();
 
     });
 
 
-
+ 
 }
 
 reportQueue(queue:AbstractQueue<Entity>){

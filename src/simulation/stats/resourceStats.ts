@@ -11,14 +11,14 @@ export class ResourceStats extends EntityStats{
     currentBusy: number =0;
 
 
-
+    totalUnScheduledTime:number=0;
     totalScheduledTime : number = 0;
     totalBusyTime : number = 0;
     totalTransferTime : number = 0;
     totalIdleTime: number =0;
     totalBrokenTime : number =0 ;
     totalOtherTime : number = 0;
-
+    simTime:number;
 
 
 

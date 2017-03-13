@@ -87,16 +87,16 @@ constructor(){
                          await ctx.walk(ctx.runtime.doctor1 as Resource,ctx.data.stations.office,ctx.data.stations.storage )
                          //The doctor gets the correct medicine
 
-                         process.release(patient,seizeResult.resource);
+                         await ctx.release(patient,seizeResult.resource);
                          
-                         ctx.dispose(patient);
+                         await ctx.dispose(patient);
                     }
                     else{
                         await ctx.delay(patient,seizeResult.resource,ctx.data.machineProcessTime);                
                 
-                        process.release(patient,seizeResult.resource);
+                        await ctx.release(patient,seizeResult.resource);
                         
-                        ctx.dispose(patient);
+                        await ctx.dispose(patient);
                     }
 
                     

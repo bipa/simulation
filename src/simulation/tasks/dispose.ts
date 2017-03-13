@@ -29,7 +29,7 @@ export class Dispose{
             entity.dispose(simulation.simTime);
             simulation.recorder.recordEntityDispose(entity);
             simulation.entities.delete(entity);
-            let simEvent =  simulation.setTimer<DisposeResult>(0, "dispose", `${entity.name} i disposed`);
+            let simEvent =  simulation.setTimer<DisposeResult>(0, "dispose", `${entity.name} is disposed`);
             simEvent.result = new DisposeResult(entity);
 
             return simEvent;

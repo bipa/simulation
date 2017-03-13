@@ -14,7 +14,9 @@ import {Delay,DelayResult} from './tasks/delay';
 import {Enqueue,EnqueueResult} from './tasks/enqueue';
 import {Dequeue,DequeueResult} from './tasks/dequeue';
 import {Release,ReleaseResult} from './tasks/release';
+import {Dispose,DisposeResult} from './tasks/dispose';
 
+import {Statistics, StatisticsRecords} from './stats/statistics';
 
 
 import { Queue, QueueTypes } from './queues/queue';
@@ -242,10 +244,16 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
      
 
 }
-simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<boolean> {
-     let promise = new Promise<boolean>(async(resolve,reject)=>{
+simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<SimulationResult> {
+     let promise = new Promise<SimulationResult>(async(resolve,reject)=>{
          this.eventEmitter.once("done",(success)=>{
-             resolve(success);
+
+            let simRes = new SimulationResult();
+            simRes.logRecords  = this.logRecords;
+            simRes.simulationRecords = this.simulationRecords;
+            simRes.statistics = this.recorder.statistics.report();
+            
+             resolve(simRes);
          });
          this.eventCount = 0;
          this.endTime = endTime || this.endTime;
@@ -461,12 +469,15 @@ route(from:Station, to :Station) : Route{
     }
 
 
-dispose(entity:Entity){
+dispose(entity:Entity): Promise<DisposeResult>{
   
+        return Dispose.dispose(this,entity);
+
+
     //keep some stats here
-    entity.dispose(this.simTime);
+  /*  entity.dispose(this.simTime);
     this.recorder.recordEntityDispose(entity);
-    this.entities.delete(entity);
+    this.entities.delete(entity);*/
 }
 
 
@@ -481,13 +492,19 @@ dispose(entity:Entity){
 
 
 
+export class SimulationResult{
+    simulationRecords:SimulationRecord[];
+    logRecords: LogRecord[];
+    statistics:StatisticsRecords;
+}
 
 
 
 
 
+export class LogRecord{
 
-
+}
 
 
 export class SimulationRecord{

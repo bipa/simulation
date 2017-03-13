@@ -86,12 +86,14 @@ export class Recorder{
 
             
         let resStat =  this.resourceStats(resource);
-        resStat.numberScheduled.record(resStat.currentScheduled,this.simulation.simTime-resStat.lastRecordedTime);
+        let duration = this.simulation.simTime-resStat.lastRecordedTime;
+        resStat.numberScheduled.record(resStat.currentScheduled,duration);
 
         resStat.totalScheduledTime += this.simulation.simTime-resStat.lastScheduledTime;
 
-        resStat.numberBusy.record(resStat.currentBusy,this.simulation.simTime-resStat.lastRecordedTime);
-        resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simulation.simTime-resStat.lastRecordedTime)
+        resStat.numberBusy.record(resStat.currentBusy,duration);
+        resStat.instantaneousUtilization.record(
+            resStat.currentBusy/resStat.currentScheduled, duration)
 
         resStat.lastScheduledTime = this.simulation.simTime;
         resStat.lastRecordedTime = this.simulation.simTime;
@@ -104,16 +106,19 @@ export class Recorder{
     onResourceScheduled=(resource:Resource)=>{
 
         let resStat =  this.resourceStats(resource);
-        resStat.numberScheduled.record(resStat.currentScheduled,this.simulation.simTime-resStat.lastRecordedTime);
-        resStat.numberBusy.record(resStat.currentBusy,this.simulation.simTime-resStat.lastRecordedTime);
+        let duration = this.simulation.simTime-resStat.lastRecordedTime;
+        resStat.numberScheduled.record(resStat.currentScheduled,duration);
+        resStat.numberBusy.record(resStat.currentBusy,duration);
 
+        resStat.totalUnScheduledTime += this.simulation.simTime-resStat.lastScheduledTime;
         if(resStat.currentScheduled===0)
         {
-                    resStat.instantaneousUtilization.record(0, this.simulation.simTime-resStat.lastRecordedTime)
+           resStat.instantaneousUtilization.record(0, duration)
                 
         }
         else{
-                    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled,this.simulation.simTime-resStat.lastRecordedTime)
+            resStat.instantaneousUtilization.record(
+                resStat.currentBusy/resStat.currentScheduled,duration)
                 
         }
 
@@ -147,18 +152,20 @@ export class Recorder{
 
 
             this.statistics.resourceStats.forEach(resStat=>{
-            resStat.numberScheduled.record(resStat.currentScheduled,this.simulation.simTime-resStat.lastRecordedTime);
-            resStat.numberBusy.record(resStat.currentBusy,this.simulation.simTime-resStat.lastRecordedTime);
+                resStat.numberScheduled.record(resStat.currentScheduled,this.simulation.simTime-resStat.lastRecordedTime);
+                resStat.numberBusy.record(resStat.currentBusy,this.simulation.simTime-resStat.lastRecordedTime);
 
-            if(resStat.currentScheduled===0)
-            {
-                resStat.instantaneousUtilization.record(0, this.simulation.simTime-resStat.lastRecordedTime)
-            
-            }
-            else{
-                resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simulation.simTime-resStat.lastRecordedTime)
-            
-            }
+                if(resStat.currentScheduled===0)
+                {
+                    resStat.instantaneousUtilization.record(0, this.simulation.simTime-resStat.lastRecordedTime)
+                
+                }
+                else{
+                    resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simulation.simTime-resStat.lastRecordedTime)
+                
+                }
+
+                resStat.simTime = this.simulation.simTime;
 
             })
 
@@ -208,6 +215,9 @@ export class Recorder{
                     {
                         
                         resStat.totalScheduledTime += this.simulation.simTime-resStat.lastScheduledTime;
+                    }else{
+                        resStat.totalUnScheduledTime += this.simulation.simTime-resStat.lastScheduledTime;
+              
                     }
             })
 
