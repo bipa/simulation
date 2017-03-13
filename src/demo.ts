@@ -1,7 +1,7 @@
 
 
 
-import {Simulation} from './simulation/simulation'
+import {Simulation,ExistingVariables} from './simulation/simulation'
 import {Distributions} from './simulation/stats/distributions'
 
 
@@ -23,6 +23,16 @@ constructor(){
     let variables : any                         = {}; //don't remove this line - declaration
     variables.kpi                      = {}; //don't remove this line - declaration
     variables.kpi.queueLength = 0;
+    variables.existing = [
+        {type:"part",variable:ExistingVariables.entityTotalWaitTimePercentage,name:"partTotalWaitTimePercentage",display:"Part ventetid %"},
+        {type:"part",variable:ExistingVariables.entityTotalValueAddedTimePercentage,name:"partTotalValueAddedTimePercentage",display:"Part VA tid %"},
+        {type:"part",variable:ExistingVariables.entityTotalTransferTimePercentage,name:"partTotalTransferTimePercentage",display:"Part transfer tid %"},
+        {type:"worker",variable:ExistingVariables.resourceTotalBusyTimePercentage,name:"workerTotalBusyTimePercentage",display:"Worker busy %"},
+        {type:"worker",variable:ExistingVariables.resourceTotalIdleTimePercentage,name:"workerTotalIdleTimePercentage",display:"Worker idle %"},
+        {type:"worker",variable:ExistingVariables.resourceTotalTransferTimePercentage,name:"partTotalTransferTimePercentage",display:"Worker transfer %"},
+    
+    
+    ]
 
     this.model = {
         data:this.data,

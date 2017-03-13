@@ -25,7 +25,7 @@ reportRecord(heading:string =null ,statRecord: DataRecord=null ){
     if(statRecord)
     {
 
-        let s = `       ${heading}          ${statRecord.average.toFixed(4)}       ${statRecord.max.toFixed(2)}        ${statRecord.min.toFixed(2)}        ${statRecord.deviation.toFixed(2)}      ${statRecord.sum.toFixed(2)}`
+        let s = `${heading}      ${statRecord.average.toFixed(4)}       ${statRecord.max.toFixed(2)}        ${statRecord.min.toFixed(2)}        ${statRecord.deviation.toFixed(2)}      ${statRecord.sum.toFixed(2)}`
         
         this.reporter(s);
     }
@@ -66,14 +66,14 @@ reportEntities(simulation:Simulation){
     simulation.recorder.statistics.entityStats.forEach((entityStats,type)=>{
             this.reporter(type)
             this.reporter();
-            this.reportRecord("Antall WIP:   ",entityStats.countStats.sizeSeries.report());
-            this.reportRecord("Varighet:     ",entityStats.countStats.durationSeries.report());
+            this.reportRecord("Antall WIP:              ",entityStats.countStats.sizeSeries.report());
+            this.reportRecord("Varighet:                ",entityStats.countStats.durationSeries.report());
            // this.reportRecord("Total tid:    ",entityStats.totalTime.report());
-            this.reportRecord("   VA Tid:    ",entityStats.valueAddedTime.report());
-            this.reportRecord("   NVA time:  ",entityStats.nonValueAddedTime.report());
-            this.reportRecord("   Transfer:  ",entityStats.transferTime.report());
-            this.reportRecord("   Ventetid:  ",entityStats.waitTime.report());
-            this.reportRecord("   Annet:     ",entityStats.otherTime.report());
+            this.reportRecord( `    VA Tid:    ${entityStats.totalValueAddedTime.toFixed(2)}   ${(entityStats.totalValueAddedTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.valueAddedTime.report());
+            this.reportRecord( `  NVA time:    ${entityStats.totalNonValueAddedTime.toFixed(2)}   ${(entityStats.totalNonValueAddedTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.nonValueAddedTime.report());
+            this.reportRecord( `  Transfer:    ${entityStats.totalTransferTime.toFixed(2)}   ${(entityStats.totalTransferTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.transferTime.report());
+            this.reportRecord( `  Ventetid:    ${entityStats.totalWaitTime.toFixed(2)}   ${(entityStats.totalWaitTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.waitTime.report());
+            this.reportRecord( `     Annet:    ${entityStats.totalOtherTime.toFixed(2)}   ${(entityStats.totalOtherTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.otherTime.report());
             this.reporter();
             
 

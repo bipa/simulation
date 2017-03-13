@@ -94,32 +94,37 @@ class ArchitectureSimulation {
         createVariables(variables, ctx){
                 for(let variableName in variables) 
                 {
-                    if(Object.keys(variables[variableName]).length>0)
+                    if(variableName!=="existing")
                     {
+                             if(Object.keys(variables[variableName]).length>0)
+                            {
 
-                           this.variables[variableName] = {};
+                                this.variables[variableName] = {};
 
-                             for(let subVariableName in variables[variableName]) 
-                             {
-                                 if(variableName=="noLog")
-                                 {
-                                        this.variables[variableName][subVariableName]=
-                                        variables[variableName][subVariableName];
-                                 }
-                                else{
-                                    this.createVariable(this.variables[variableName],
-                                    subVariableName,
-                                    variables[variableName][subVariableName],ctx)
-                                }
-                                
-                             }
-                    }else{
-                              this.createVariable(this.variables,
-                              variableName,
-                              variables[variableName],ctx)
-                     }
-
-                   
+                                    for(let subVariableName in variables[variableName]) 
+                                    {
+                                        if(variableName=="noLog")
+                                        {
+                                                this.variables[variableName][subVariableName]=
+                                                variables[variableName][subVariableName];
+                                        }
+                                        else{
+                                            this.createVariable(this.variables[variableName],
+                                            subVariableName,
+                                            variables[variableName][subVariableName],ctx)
+                                        }
+                                        
+                                    }
+                            }else{
+                                    this.createVariable(this.variables,
+                                    variableName,
+                                    variables[variableName],ctx)
+                            }
+                      }
+                      else{
+                            
+                      }
+                      
                 }
         }
 

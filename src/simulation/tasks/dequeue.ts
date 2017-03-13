@@ -3,7 +3,7 @@
 import { AbstractQueue } from '../queues/abstractQueue';
 import { SimEvent,ISimEventResult } from '../simEvent';
 import { Simulation } from '../simulation';
-import { Entity } from '../model/entity';
+import { Entity ,Allocations} from '../model/entity';
 import { IEntity } from '../model/ientity';
 
 
@@ -30,6 +30,7 @@ export class Dequeue{
             queue.dequeue();
             //simulation.scheduleEvent(simEvent, 0, `${entity.name} has dequeued ${queue.name}`);
            
+            simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,Allocations.wait);
 
 
             return simEvent;

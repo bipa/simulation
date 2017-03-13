@@ -111,6 +111,7 @@ export class Simulation{
     this.eventEmitter.setMaxListeners(100);
     this.data = Object.assign({},model.data);
     this.variables = {};
+    this.createVariables(model.variables,this);
     this.eventCount = 0;
     this.unscheduledEvents = new Map<number,ISimEvent>();
  
@@ -136,7 +137,7 @@ report(){
 log(message:string,type:string=null, entity:Entity=null){
      let newlogRec = {
                 simTime:this.simTime,
-                name:message,
+                name:type,
                 message:message
             };
             this.logRecords.push(newlogRec);
@@ -469,27 +470,141 @@ route(from:Station, to :Station) : Route{
     }
 
 
-dispose(entity:Entity): Promise<DisposeResult>{
-  
-        return Dispose.dispose(this,entity);
+    dispose(entity:Entity): Promise<DisposeResult>{
+    
+            return Dispose.dispose(this,entity);
+    }
 
 
-    //keep some stats here
-  /*  entity.dispose(this.simTime);
-    this.recorder.recordEntityDispose(entity);
-    this.entities.delete(entity);*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        createVariables(variables, ctx){
+                for(let variableName in variables) 
+                {
+                    if(variableName!=="existing")
+                    {
+                             if(Object.keys(variables[variableName]).length>0)
+                            {
+
+                                this.variables[variableName] = {};
+
+                                    for(let subVariableName in variables[variableName]) 
+                                    {
+                                        if(variableName=="noLog")
+                                        {
+                                                this.variables[variableName][subVariableName]=
+                                                variables[variableName][subVariableName];
+                                        }
+                                        else{
+                                            this.createVariable(this.variables[variableName],
+                                            subVariableName,
+                                            variables[variableName][subVariableName],ctx)
+                                        }
+                                        
+                                    }
+                            }else{
+                                    this.createVariable(this.variables,
+                                    variableName,
+                                    variables[variableName],ctx)
+                            }
+                      }
+                      else{
+                            variables[variableName].forEach(variable=>{
+                                this.recorder.addExistingVariable(variable);
+
+
+                            })
+                      }
+                      
+                }
+        }
+
+
+        createVariable(obj,propName, initValue,ctx){
+                let vValue=initValue;
+                 Object.defineProperty(
+                     obj
+                     ,propName
+                     ,{
+                          get: function() { return vValue; },
+                     set: function(value) {
+                         vValue = value;
+                         ctx.simulationRecords.push(
+                             {
+                                 simtime:ctx.time(),
+                                 name:propName,
+                                 value:value
+                             }
+                         )}
+                        }
+                )
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 
 
+
+
+export class Variable{
+    type:string;
+    variable : ExistingVariables;
+    name:string;
+
+
 }
+ export enum ExistingVariables{
+        entityTotalValueAddedTime=0,
+        entityTotalNonValueAddedTime,
+        entityTotalWaitTime,
+        entityTotalTransferTime,
+        entityTotalOtherTime,
 
+        entityTotalValueAddedTimePercentage,
+        entityTotalNonValueAddedTimePercentage,
+        entityTotalWaitTimePercentage,
+        entityTotalTransferTimePercentage,
+        entityTotaOtherTimePercentage,
 
+        resourceTotalInstantaneousUtilization,
 
+        resourceTotalIdleTime,
+        resourceTotalBusyTime,
+        resourceTotalTransferTime,
 
-
-
-
+        resourceTotalIdleTimePercentage,
+        resourceTotalBusyTimePercentage,
+        resourceTotalTransferTimePercentage,
+ }
 
 
 export class SimulationResult{

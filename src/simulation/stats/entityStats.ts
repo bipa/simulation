@@ -12,6 +12,15 @@ export class EntityStats{
     waitTime:DataSeries;
     otherTime:DataSeries;
 
+    totalWaitTime:number=0;
+    totalValueAddedTime:number =0;
+    totalNonValueAddedTime: number=0;
+    totalTransferTime:number=0;
+    totalOtherTime:number=0;
+
+
+
+
     //count stats
     countStats:Population;
 

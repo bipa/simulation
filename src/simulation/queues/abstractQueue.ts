@@ -2,6 +2,7 @@ import {Queue} from './queue';
 import {Simulation} from '../simulation';
 import {Population,PopulationRecord} from '../stats/dataRecorder';
 import {IEntity} from '../model/iEntity';
+import {Entity} from '../model/entity';
 
 
 let EventEmitter = require('events');
@@ -45,7 +46,7 @@ export class AbstractQueue<T extends IEntity>{
 
         this.eventEmitter.emit("enqueued",item)
     }
-
+ 
 
     dequeue() : T{
         

@@ -45,7 +45,7 @@ export class ResourceStats extends EntityStats{
 
     }
 
-
+    
 
     get scheduledUtilization() : number {
 
