@@ -60,7 +60,7 @@ export class Simulation{
 
   simTime:number;
 
-  entities:Set<Entity>;
+  entities:Entity[];
   entityModels: Map<string,any>;
   resources:Resource[];
   processes:Map<string,Process>;
@@ -91,7 +91,7 @@ export class Simulation{
     this.random = new Random(model.preferences.seed);
     this.baseUnit = model.preferences.baseUnit || Units.Minute;
     this.simTime = 0;
-    this.entities = new Set<Entity>();
+    this.entities = [];
     this.resources = [];
     this.endTime = model.preferences.simTime || 1000;
     this.processes = new Map<string,Process>();
@@ -117,7 +117,8 @@ export class Simulation{
  
     this.entityModels = new Map<string,any>();
 
-    this.creator.createstations(model.stations);
+    this.stations=model.stations;
+    this.routes = model.routes;
     this.creator.createVariables(model.variables,this);
     this.creator.createResources(model.entities);
     //this.creator.createProcesses(model.processes);
@@ -198,7 +199,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
             this.eventEmitter.once(simEvent.name,(event:SimEvent<T>)=>{
 
                 resolve(event.result);
-
+                let i  =0;
             })
     }).then(e=>{
       return simEvent.result;
@@ -233,7 +234,7 @@ setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,mes
       };
       this.eventCount++;
       event.isConcurrent ? this.simTime = event.deliverAt-Simulation.epsilon : this.simTime  = event.deliverAt;
-      this.log(event.message,event.type);
+      if(event.log) this.log(event.message,event.type);
       //if(this.eventCount>1)
       this.eventEmitter.emit(event.name, event);
         
@@ -252,7 +253,7 @@ simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<Simula
             let simRes = new SimulationResult();
             simRes.logRecords  = this.logRecords;
             simRes.simulationRecords = this.simulationRecords;
-            simRes.statistics = this.recorder.statistics.report();
+            //simRes.statistics = this.recorder.statistics.report();
             
              resolve(simRes);
          });
@@ -282,6 +283,23 @@ return promise;
 
 
 
+ setConventions(entityModel:any){
+          
+      if(!entityModel.creation){
+          entityModel.creation = {
+              dist:{
+                  value:0,
+                  type:Distributions.Constant
+              },
+              runOnce:true
+          };
+      }else{
+          if(entityModel.creation.dist==null) entityModel.creation.dist = {value:0,type:Distributions.Constant};
+          if(entityModel.creation.runOnce==null) entityModel.creation.runOnce = false;
+          if(entityModel.creation.runBatch==null&&!entityModel.creation.batchsize) entityModel.creation.batchsize = 1;
+
+      }
+  }
   
       
 addRandomValue(dist:Distribution){
@@ -296,7 +314,7 @@ addRandomValue(dist:Distribution){
     
     switch (dist.type) {
       case Distributions.Constant:
-        value  = dist.param1*scale;
+        value  = dist.value*scale;
         break;
       case Distributions.Exponential:
         value= this.random.exponential(1.0/(dist.param1*scale));
@@ -367,6 +385,14 @@ queue(name:string,queueType:QueueTypes = QueueTypes.fifo) : AbstractQueue<IEntit
 }
 
 
+removeEntity(entity:Entity){
+    let i = this.entities.indexOf(entity);
+    this.entities.splice(i,1);
+}
+
+getEntitiesByType(type :string): Entity[]{
+   return this.entities.filter(e=>{return e.type===type});
+}
 
 process(name:string) : Process{
     return this.creator.process(name);
@@ -392,7 +418,10 @@ route(from:Station, to :Station) : Route{
     walk(entity:Entity,from:Station,to : Station,speed=1) : Promise<SimEvent<WalkResult>>{
         return Walk.walk(this,entity,from,to,speed);
     }
-
+ 
+    walkTo(entity:Entity,to : Station,speed=1) : Promise<SimEvent<WalkResult>>{
+        return this.walk(entity,entity.currentStation,to,speed);
+    }
 
     /*all(event1:SimEvent, event2 : SimEvent) : Promise<SimEvent>
     {
@@ -436,6 +465,28 @@ route(from:Station, to :Station) : Route{
     seizeDelayRelease() : Promise<SimEvent<SeizeResult>>{
         return null;
     }
+
+
+    async seize(entity:Entity,resources:Resource[], queue :AbstractQueue<IEntity>) : Promise<SeizeResult>{
+
+
+            let simEvent = this.setTimer<SeizeResult>();
+
+            let enqueueResult =  await this.enqueue(entity,queue);
+            let seizeResult   = await this.seizeOneFromManyResources(entity,resources);
+            let dequeueResult = await this.dequeue(entity,queue);
+                                
+            simEvent.result  =seizeResult;
+            this.scheduleEvent(simEvent,0,"SEIZE DONE");
+
+            return simEvent.promise.then(e=>{
+                        return simEvent.result;
+                    });;                
+}
+
+
+
+
 
 
     seizeOneFromManyResources(entity:Entity,resources:Resource[]) : Promise<SeizeResult>{
@@ -555,6 +606,34 @@ route(from:Station, to :Station) : Route{
         }
 
 
+    allocate(to:any[],from:any[],callback:Function){
+        
+        //Should assume to has mor eelements than from
+        let counter=0;
+        to.forEach(t=>{
+            callback(t,from[counter]);
+            counter++
+        })
+
+    }
+
+ allocateToProperty(to:Entity[],from:Entity[],property:string){
+        
+        //Should assume to has mor eelements than from
+
+        if(to.length>from.length) throw Error("AllocateToPropertError");
+
+        let counter=0;
+        to.forEach(t=>{
+
+            let res = from[counter];
+           t.runtime[property] = res;
+           if(res instanceof Resource)
+                (res as Resource).seize(t);
+            counter++
+        })
+
+    }
 
 
 
@@ -563,9 +642,62 @@ route(from:Station, to :Station) : Route{
 
 
 
+ static createOppositeRoutes(routes: Route[]){
+     let oRoutes : Route[] =[ ];
+     routes.forEach(r=>{
+         let oR = new Route(r.to,r.from,r.distance);
+         oRoutes.push(oR);
+     })
+     let routs = routes.concat(oRoutes);
+
+     return routs;
+ }
+
+
+static routes(routes:Route[], stations : Station[]): Route[]{
+   let oppRoutes =  this.createOppositeRoutes(routes);
+   let nullRoutes  = this.createNullRoutes(stations);
+
+   let all = oppRoutes.concat(nullRoutes);
+
+   return all;
+}
+
+ static stations(stations: any) : Station[]{
+    return this.getFromData<Station>(stations);
+ }
 
 
 
+ static getFromData<T>(obj : any, predicate:Function =null) : T[]
+ {  
+     let a : T[] = [];
+
+    for(let o in obj){
+        let value = obj[o];
+        if(predicate)
+        {
+            if(predicate(value)){
+                a.push(value);
+            }
+        }else{
+            a.push(value);
+        }
+    }
+
+    return a;
+ }
+
+
+static createNullRoutes(stations : Station[]) : Route[]{
+   let oRoutes : Route[] =[ ];
+     stations.forEach(r=>{
+         let oR = new Route(r,r,0);
+         oRoutes.push(oR);
+     })
+
+     return oRoutes;
+}
 
 
 

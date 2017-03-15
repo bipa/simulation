@@ -19,12 +19,14 @@ export class SimEvent<T extends ISimEventResult> implements ISimEvent{
     result : T;
     name:string;
     isConcurrent : boolean = false;
+    log : boolean = true;
 
 
     constructor(scheduledAt:number, deliverAt:number,type:string,message:string){
 
-
-        this.deliverAt = deliverAt || Number.POSITIVE_INFINITY;
+        if(deliverAt===null) deliverAt = Number.POSITIVE_INFINITY;
+        
+        this.deliverAt = deliverAt;
         this.scheduledAt = scheduledAt;
         this.cancelled = false;
         this.type=type;
@@ -57,6 +59,7 @@ export class SimEvent<T extends ISimEventResult> implements ISimEvent{
         name:string;
         isConcurrent:boolean;
         isScheduled:boolean ;
-        promise:Promise<ISimEventResult>
+        promise:Promise<ISimEventResult>;
+        log : boolean;
         
     } 

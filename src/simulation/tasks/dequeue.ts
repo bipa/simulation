@@ -5,6 +5,7 @@ import { SimEvent,ISimEventResult } from '../simEvent';
 import { Simulation } from '../simulation';
 import { Entity ,Allocations} from '../model/entity';
 import { IEntity } from '../model/ientity';
+import { Resource } from '../model/resource';
 
 
 export class Dequeue{
@@ -26,12 +27,12 @@ export class Dequeue{
        static dequeueEvent(simulation:Simulation,entity: Entity,  queue: AbstractQueue<IEntity>) : SimEvent<DequeueResult>{
            
             let simEvent = simulation.setTimer<DequeueResult>(0,"dequeue",`${entity.name} has dequeued ${queue.name}`);
-           simEvent.result = new DequeueResult(entity);      
-            queue.dequeue();
-            //simulation.scheduleEvent(simEvent, 0, `${entity.name} has dequeued ${queue.name}`);
-           
-            simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,Allocations.wait);
+           simEvent.result = new DequeueResult(entity);   
+           queue.dequeue();
+           simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,Allocations.wait);
 
+           
+           
 
             return simEvent;
 

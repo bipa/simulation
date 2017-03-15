@@ -7,6 +7,18 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "aukraHeimen",
+            "program": "${workspaceRoot}/src/aukraheimen.ts",
+            "cwd": "${workspaceRoot}",
+            "outFiles":["${workspaceRoot}/server/**/*.js"],
+            "skipFiles": [
+                        "node_modules/**/*.js",
+                        "<node_internals>/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "demo",
             "program": "${workspaceRoot}/src/demo.ts",
             "cwd": "${workspaceRoot}",
@@ -19,7 +31,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "aukraHeimen",
+            "name": "aukraHeimen1",
             "program": "${workspaceRoot}/server/KzgTQGeC4d.js",
             "cwd": "${workspaceRoot}"
         },

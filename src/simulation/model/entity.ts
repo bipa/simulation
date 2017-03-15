@@ -7,7 +7,7 @@ let EventEmitter = require('events');
 
 export class Entity implements IEntity{
 
-    static count:number=0;
+    static counter:Map<string,any>=new Map<string,any>();
 
     finalize:Function;
     type:string;
@@ -32,9 +32,10 @@ export class Entity implements IEntity{
     constructor(entityModel:any){
         this.type = entityModel.type;
         this.speed = entityModel.speed;
-        this.name = entityModel.name || entityModel.type+Entity.count;
+        if(!Entity.counter.has(this.type)) Entity.counter.set(this.type,{value:1});
+        this.name = entityModel.name || entityModel.type+Entity.counter.get(this.type).value;
         
-            Entity.count++;
+            Entity.counter.get(this.type).value++;
             this.emitter = new EventEmitter();
     }
 

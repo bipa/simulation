@@ -47,26 +47,34 @@ export class Seize{
                 simEvent.result  = sResult;
             }
             else {
-                resources.forEach(r => {
-                r.emitter.once("idle", resource => {
-                    if (!simEvent.isScheduled) {
-                        let sResult =   Seize.inner_seize(simulation,entity,resource,simEvent);
-                        simEvent.result  = sResult;
-                    }
-                    });
-                });
+                 resources.forEach(r => {
+                    Seize.seizeOnIdle(simulation,entity,r,simEvent);
+                 });
             }
 
 
             return simEvent;
        }
  
-
-
-   static  inner_seize(simulation: Simulation,entity: Entity, resource: Resource, simEvent: SimEvent<SeizeResult> ) :SeizeResult {
+       static seizeOnIdle(simulation: Simulation,entity: Entity, resource: Resource, 
+                            simEvent: SimEvent<SeizeResult> ){  
+                   
+            resource.emitter.once("idle", (resource : Resource) => {
+               if (!simEvent.isScheduled && resource.state !== ResourceStates.idle) {
+                    Seize.seizeOnIdle(simulation,entity,resource,simEvent);
+                   
+               }else{
+                   let sResult =   Seize.inner_seize(simulation,entity,resource,simEvent);
+                   simEvent.result  = sResult;
+               }
+            });
+            
+        }
+   static  inner_seize(simulation: Simulation,entity: Entity, resource: Resource, 
+                            simEvent: SimEvent<SeizeResult> ) :SeizeResult {
                 resource.seize(entity);
                 simEvent.result = new SeizeResult(entity, resource);
-                simulation.scheduleEvent(simEvent, 0, `${entity.name} seized ${resource.name}`);
+                simulation.scheduleEvent(simEvent, 0, `  ${entity.name} seized ${resource.name}`);
                  return simEvent.result;
     }
 

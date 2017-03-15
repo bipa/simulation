@@ -59,17 +59,13 @@ constructor(){
             type:"part",
             creation:{
                 dist:this.data.partArrivalDist,
-                onCreateModel:async (part,ctx:Simulation)=>{
-
-                    let enqueueResult = await ctx.enqueue(part,ctx.queue("processQueue"));
-
-                    let seizeResult   = await ctx.seizeResource(part,ctx.runtime.worker1);
-
-                    let dequeueResult = await ctx.dequeue(part,ctx.queue("processQueue"));
-
-                    let delayResult   = await ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                createInstance:async (part,ctx:Simulation)=>{
+                    
+                    let dequeueResult = await ctx.seize(part,[ctx.runtime.worker1],ctx.queue("nursesQueue"));
+                               
+                    let delayResult   = await ctx.delay(part,dequeueResult.resource,ctx.data.machineProcessTime);                
                 
-                    let releaseResult = await ctx.release(part,seizeResult.resource);
+                    let releaseResult = await ctx.release(part,dequeueResult.resource);
                     
                     let disposeResult = await ctx.dispose(part);
                   

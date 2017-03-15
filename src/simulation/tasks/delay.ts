@@ -29,7 +29,7 @@ export class Delay{
            
             let processTime = simulation.addRandomValue(processTimeDist);
             let timeStampBefore = simulation.simTime;
-            let simEvent =  simulation.setTimer<DelayResult>(processTime, "delay", `${entity.name} processed by ${resource.name}`);
+            let simEvent =  simulation.setTimer<DelayResult>(processTime, "delay", `  ${entity.name} processed by ${resource.name}`);
             resource.process(entity);       
             simulation.eventEmitter.once(simEvent.name,sEvent=>{
                 simulation.recorder.recordEntityStat(entity,timeStampBefore,allocation);

@@ -23,9 +23,23 @@ constructor(){
     this.data.storageTripProbability = 0.3;
 
     this.data.stations  = {};
-    this.data.stations.pasientQueue = new Station({name:"pasientQueue"});
-    this.data.stations.office = new Station({name:"office"});
-    this.data.stations.storage = new Station({name:"storage"});
+    this.data.stations.pasientQueue = new Station("pasientQueue");
+    this.data.stations.p1A = new Station("patientRoom1");
+    this.data.stations.p2A = new Station("patientRoom2");
+    this.data.stations.p3A = new Station("patientRoom3");
+    this.data.stations.p4A = new Station("patientRoom4");
+    this.data.stations.p5A = new Station("patientRoom5");
+    this.data.stations.p6A = new Station("patientRoom6");
+    this.data.stations.p7A = new Station("patientRoom7");
+    this.data.stations.p8A = new Station("patientRoom8");
+    this.data.stations.p9A = new Station("patientRoom9");
+    this.data.stations.p10A = new Station("patientRoom10");
+    this.data.stations.p11A = new Station("patientRoom11");
+    this.data.stations.p12A = new Station("patientRoom12");
+    this.data.stations.storage1 = new Station("storage1");
+    this.data.stations.storage2 = new Station("storage2");
+    this.data.stations.base = new Station("base");
+    this.data.stations.medicine = new Station("medicine");
 
 
     this.data.routes=[
@@ -41,8 +55,8 @@ constructor(){
     this.model = {
         data:this.data,
         variables:variables,
-        stations:[this.data.stations.pasientQueue,this.data.stations.office,this.data.stations.storage],
-        routes:this.data.routes,
+        stations:this.getFromData(this.data.stations),
+        routes:this.getFromData(this.data.routes),
         entities:this.getEntities(),
         preferences:this.getPreferences()
 
@@ -53,7 +67,17 @@ constructor(){
 }
 
 
- 
+ getFromData<T>(obj : any) : T[]
+ {  
+     let a : T[] = [];
+
+    for(let o in obj){
+        let value = obj[o];
+        a.push(value);
+    }
+
+    return a;
+ }
  
 
  getEntities(){
@@ -63,7 +87,7 @@ constructor(){
             type:"patient",
             creation:{
                 dist:this.data.patientArrivalDist,
-                onCreateModel:async (patient:Entity,ctx:Simulation)=>{
+                createInstance:async (patient:Entity,ctx:Simulation)=>{
 
                     patient.currentStation = ctx.data.stations.pasientQueue;
                     ctx.runtime.doctor1.currentStation = ctx.data.stations.office;

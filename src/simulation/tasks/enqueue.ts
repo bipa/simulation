@@ -26,16 +26,16 @@ export class Enqueue{
        static enqueueEvent(simulation:Simulation,entity: Entity,  queue: AbstractQueue<IEntity>) : SimEvent<EnqueueResult>{
            
             let simEvent = simulation.setTimer<EnqueueResult>();
-            simEvent.type="enqueue";
+            simEvent.type="front";
             simEvent.result = new EnqueueResult(entity);
             queue.enqueue(entity);
             if (queue.length == 1) {    
-                simulation.scheduleEvent(simEvent, 0, `${entity.name} is now in front of ${queue.name}`);      
+                simulation.scheduleEvent(simEvent, 0, `  ${entity.name} is now in front of ${queue.name}`);      
             }
             else{
                  //Listen for the one time the entity is in front....then seize
                 queue.eventEmitter.once(entity.name, async () => {        
-                        simulation.scheduleEvent(simEvent, 0, `${entity.name} is now in front of ${queue.name}`);      
+                        simulation.scheduleEvent(simEvent, 0, `  ${entity.name} is now in front of ${queue.name}`);      
                 })
             }
 
