@@ -2,6 +2,7 @@ import { Queue, QueueTypes } from '../queues/queue';
 import { FifoQueue } from '../queues/fifoQueue';
 import { AbstractQueue } from '../queues/abstractQueue';
 import { Entity,Allocations } from '../model/entity';
+import { ISimulation } from '../model/iSimulation';
 import { Resource, ResourceStates } from '../model/resource';
 import { Simulation } from '../simulation';
 import { Distribution } from '../stats/distributions';
@@ -17,9 +18,9 @@ export class Process {
 
     queue: AbstractQueue<Entity>;
     eventEmitter: any;
-    simulation: Simulation;
+    simulation: ISimulation;
     name: string;
-    constructor(simulation: Simulation,name:string,  queueType: QueueTypes = QueueTypes.fifo) {
+    constructor(simulation: ISimulation,name:string,  queueType: QueueTypes = QueueTypes.fifo) {
         switch (queueType) {
             case QueueTypes.fifo:
                 this.queue = new FifoQueue<Entity>(simulation);

@@ -51,6 +51,7 @@ export class Resource extends Entity{
 
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.transfer;
+        this.emitter.emit("onAfterResourceStateChanged", this);
 
         this.emitter.emit("transfer", this);
     }
@@ -61,6 +62,7 @@ export class Resource extends Entity{
 
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.busy;
+        this.emitter.emit("onAfterResourceStateChanged", this);
 
         this.emitter.emit("onResourceBusy", this);
         this.emitter.emit("busy", entity);
@@ -75,6 +77,7 @@ export class Resource extends Entity{
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.seized;
         this.seizedBy = entity;
+        this.emitter.emit("onAfterResourceStateChanged", this);
        this.emitter.emit("seized", entity);
     }
 
@@ -84,6 +87,7 @@ export class Resource extends Entity{
 
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.idle;
+        this.emitter.emit("onAfterResourceStateChanged", this);
         this.seizedBy = null;
         this.emitter.emit("idle", this);
     }
@@ -108,6 +112,7 @@ export class Resource extends Entity{
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.broken;
         this.seizedBy = null;
+        this.emitter.emit("onAfterResourceStateChanged", this);
         this.emitter.emit("broken", this);
     }
 
@@ -119,6 +124,7 @@ export class Resource extends Entity{
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.other;
         this.seizedBy = null;
+        this.emitter.emit("onAfterResourceStateChanged", this);
         this.emitter.emit("other", this);
     }
 

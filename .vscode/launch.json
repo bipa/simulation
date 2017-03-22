@@ -19,6 +19,18 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "demo2",
+            "program": "${workspaceRoot}/src/demo2.ts",
+            "cwd": "${workspaceRoot}",
+            "outFiles":["${workspaceRoot}/server/**/*.js"],
+            "skipFiles": [
+                        "node_modules/**/*.js",
+                        "<node_internals>/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "demo",
             "program": "${workspaceRoot}/src/demo.ts",
             "cwd": "${workspaceRoot}",

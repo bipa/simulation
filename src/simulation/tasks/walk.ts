@@ -6,6 +6,7 @@ import { Station } from '../model/station';
 import { Entity, Allocations } from '../model/entity';
 import { Resource, ResourceStates } from '../model/resource';
 
+import { ISimulation } from '../model/iSimulation';
 
 
 export class Walk{
@@ -15,7 +16,7 @@ export class Walk{
        
 
 
-       static walk(simulation:Simulation,entity:Entity,from:Station,to : Station,speed=0.7) 
+       static walk(simulation:ISimulation,entity:Entity,from:Station,to : Station,speed=0.7) 
        : Promise<SimEvent<WalkResult>> {
 
             let simEvent  =Walk.walkEvent(simulation,entity,from,to,speed)
@@ -24,7 +25,7 @@ export class Walk{
        }
 
 
-       static walkEvent(simulation:Simulation,entity:Entity,from:Station,to : Station,speed=1) : SimEvent<WalkResult>{
+       static walkEvent(simulation:ISimulation,entity:Entity,from:Station,to : Station,speed=1) : SimEvent<WalkResult>{
               speed = entity.speed  || speed;
             let route = simulation.route(from,to);
             let time  = speed*route.distance;

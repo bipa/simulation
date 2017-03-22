@@ -1,8 +1,9 @@
 
 
 
-import {Simulation,ExistingVariables} from './simulation/simulation'
+import {Simulation,ExistingVariables} from './simulation/simulation2'
 import {Distributions} from './simulation/stats/distributions'
+import {Entity} from './simulation/model/entity'
 
 
 export class Demo{
@@ -59,25 +60,28 @@ constructor(){
             type:"part",
             creation:{
                 dist:this.data.partArrivalDist,
-                createInstance:async (part,ctx:Simulation)=>{
+                createInstance:function *(part : Entity,ctx:Simulation){
                     
+                    
+
                     //let dequeueResult = await ctx.seize(part,[ctx.runtime.worker1],ctx.queue("nursesQueue"));
 
                     
-                    let enqueueResult =  await ctx.enqueue(part,ctx.queue("nursesQueue"));
+                     let enqueueResult =  yield ctx.enqueue(part,ctx.queue("nursesQueue"));
 
-                    let seizeResult   = await ctx.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
+                     let seizeResult   = yield ctx.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
+                   let i =0;
                    
-                   
-                    let dequeueResult = await ctx.dequeue(part,ctx.queue("nursesQueue"));
+                     let dequeueResult = yield *ctx.dequeue(part,ctx.queue("nursesQueue"));
+                     let k =0;
                      
-                             
-                    let delayResult   = await ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                     let delayResult   = yield *ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                    let j =0;
+                 
                 
-                
-                    let releaseResult = await ctx.release(part,seizeResult.resource);
+                   let releaseResult = yield *ctx.release(part,seizeResult.resource);
                     
-                   /* let disposeResult = await ctx.dispose(part);*/
+                   let disposeResult = yield  ctx.dispose(part);
                   
 
                 }            

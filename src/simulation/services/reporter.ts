@@ -3,6 +3,7 @@
 import {Simulation} from '../simulation'
 import {Process} from '../tasks/process';
 import {Entity} from '../model/entity';
+import {ISimulation} from '../model/iSimulation';
 import {Population,DataSeries,TimeSeries} from '../stats/dataRecorder';
 import {DataRecord} from '../stats/dataRecord';
 import {Resource} from '../model/resource';
@@ -11,9 +12,11 @@ import {AbstractQueue} from '../queues/abstractQueue';
 export class Reporter{
 
     reporter : Function;
+    simulation: ISimulation;
 
-    constructor(reporter : Function = null){
+    constructor(simulation: ISimulation,reporter : Function = null){
             this.reporter  = reporter || this.defaultReporter;
+            this.simulation = simulation;
     }
 
 
@@ -31,22 +34,22 @@ reportRecord(heading:string =null ,statRecord: DataRecord=null ){
     }
 }
 
-report(simulation: Simulation){
+report(){
 
     this.reporter(`ENTITETER                    average      Max         Min       St.avvik         Sum`)
     this.reporter();
-    this.reportEntities(simulation);
+    this.reportEntities();
     this.reporter();
     this.reporter("RESSURSER");
     this.reporter();
-    this.reportResources(simulation);
+    this.reportResources();
     this.reporter();
     this.reporter("PROSESSER");
     this.reporter();
 
-    simulation.processes.forEach(process=>{
+   /* simulation.processes.forEach(process=>{
         this.reportProcess(process);
-    })
+    })*/
 }
 
 reportProcess(process:Process){
@@ -60,10 +63,10 @@ reportProcess(process:Process){
 
 }
 
-reportEntities(simulation:Simulation){
+reportEntities(){
     
 
-    simulation.recorder.statistics.entityStats.forEach((entityStats,type)=>{
+    this.simulation.recorder.statistics.entityStats.forEach((entityStats,type)=>{
             this.reporter(type)
             this.reporter();
             this.reportRecord("Antall WIP:              ",entityStats.countStats.sizeSeries.report());
@@ -85,10 +88,10 @@ reportEntities(simulation:Simulation){
 }
 
 
-reportResources(simulation:Simulation){
+reportResources(){
     
 
-    simulation.recorder.statistics.resourceStats.forEach((resourceStats,type)=>{
+    this.simulation.recorder.statistics.resourceStats.forEach((resourceStats,type)=>{
         this.reporter(type);
         this.reporter();
             this.reportRecord("Antall busy:   ",resourceStats.numberBusy.report());

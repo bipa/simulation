@@ -1,6 +1,6 @@
 import {Queue} from './queue';
 import {AbstractQueue} from './abstractQueue';
-import {Simulation} from '../simulation';
+import {ISimulation} from '../model/isimulation';
 import {IEntity} from '../model/iEntity';
 import {} from './stats';
 
@@ -9,10 +9,10 @@ export class FifoQueue<T extends IEntity> extends AbstractQueue<T>{
 
 
 
-    sim:Simulation;
+    sim:ISimulation;
     queue:Queue<T>;
 
-    constructor(sim:Simulation, name:string=null){
+    constructor(sim:ISimulation, name:string=null){
         super(sim,name);
         this.queue = new Queue<T>();
     }

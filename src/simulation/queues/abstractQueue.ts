@@ -1,5 +1,5 @@
 import {Queue} from './queue';
-import {Simulation} from '../simulation';
+import {ISimulation} from '../model/isimulation';
 import {Population,PopulationRecord} from '../stats/dataRecorder';
 import {IEntity} from '../model/iEntity';
 import {Entity} from '../model/entity';
@@ -13,7 +13,7 @@ export class AbstractQueue<T extends IEntity>{
 
     static count : number = 0;
 
-    simulation:Simulation;
+    simulation:ISimulation;
     stats:Population;
     name:string;
     timeStamps:Map<T,number>;
@@ -22,7 +22,7 @@ export class AbstractQueue<T extends IEntity>{
     current:number;
     eventEmitter: any;
 
-    constructor(sim:Simulation, name:string = null){
+    constructor(sim:ISimulation, name:string = null){
         this.simulation  = sim;
         this.timeStamps = new Map<T,number>();
         this.stats = new Population();

@@ -2,6 +2,7 @@
 import {Resource,ResourceStates,ScheduledStates} from '../model/resource';
 import {Entity,Allocations} from '../model/entity';
 import {IEntity} from '../model/ientity';
+import {ISimulation} from '../model/iSimulation';
 import {Simulation,Variable,ExistingVariables,SimulationRecord} from '../simulation';
 import {Statistics} from '../stats/statistics';
 import {EntityStats} from '../stats/entityStats';
@@ -12,10 +13,10 @@ export class Recorder{
 
 
     statistics:Statistics;
-    simulation:Simulation;
+    simulation:ISimulation;
     variables:Variable[];
 
-    constructor(simulation:Simulation){
+    constructor(simulation:ISimulation){
         this.variables = [];
         this.simulation = simulation;
         this.statistics = new Statistics();
@@ -327,7 +328,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         }
         let entityModel = this.simulation.entityModels.get(entity.type);
         if(entityModel.recordWip){
-            this.recordEntityStats(entity,this.simulation);
+            this.recordEntityStats(entity);
         }
         });
 
@@ -338,7 +339,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         
         this.entityStats(entity).countStats.leave(entity.timeEntered,this.simulation.simTime);
         this.entityStats(entity).totalTime.record(entity.timeLeft  - entity.timeEntered);
-        this.recordEntityStats(entity,this.simulation);
+        this.recordEntityStats(entity);
                 
     }
 
@@ -389,7 +390,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         }
     }
 
-    recordEntityStats(entity : Entity, simulation:Simulation){
+    recordEntityStats(entity : Entity){
         
         this.entityStats(entity).nonValueAddedTime.record(entity.nonValueAddedTime);
         this.entityStats(entity).waitTime.record(entity.waitTime);
@@ -427,10 +428,10 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 //PROCESSES
 
     finalizeProcessRecords(){
-         this.simulation.processes.forEach(p=>{
+        /* this.simulation.processes.forEach(p=>{
             p.finalize();
             // this.reportProcess(p);
-         });
+         });*/
     }
 
 
