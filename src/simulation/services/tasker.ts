@@ -71,6 +71,7 @@ export class Tasker{
             this.simulation.currentSimEvent.type ="walk";
             this.simulation.currentSimEvent.message = `${entity.name} is done walking from ${from.name} to ${to.name}`;
             yield;
+            entity.currentStation = to;
             if(entity instanceof Resource)
             {
                     let resource =  entity as Resource;

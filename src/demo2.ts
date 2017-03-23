@@ -92,12 +92,14 @@ constructor(){
                    
                      yield *ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
 
-                     yield *ctx.tasks.walk(part,part.currentStation,seizeResult.resource.currentStation);
+                     yield *ctx.tasks.walkTo(part,seizeResult.resource.currentStation);
                     
                      yield *ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 
                      yield  ctx.tasks.release(part,seizeResult.resource);
                     
+                     yield *ctx.tasks.walkTo(part,ctx.data.stations.inventory);
+
                      yield  ctx.tasks.dispose(part);
                   
 
