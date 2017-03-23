@@ -107,7 +107,10 @@ constructor(){
             type:"worker",
             name:"worker1",
             isResource:true,
-            currentStation : this.data.stations.workerStation,
+            creation:{
+                currentStation : this.data.stations.workerStation
+            }
+            
         }
 
 

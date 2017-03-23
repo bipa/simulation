@@ -127,7 +127,7 @@ export class Simulation implements ISimulation{
     this.stations=model.stations;
     this.routes = model.routes;
     this.creator.createVariables(model.variables,this);
-    this.creator.createResources(model.entities);
+    //this.creator.createResources(model.entities);
     //this.creator.createProcesses(model.processes);
     this.creator.createEntities(model.entities);
 
@@ -234,6 +234,14 @@ return promise;
               runOnce:true
           };
       }else{
+
+            if(entityModel.creation.dist==null&&entityModel.creation.runOnce==null) {
+                entityModel.creation.runOnce=true;
+                entityModel.creation.dist = {value:0,type:Distributions.Constant};
+        
+            }
+
+
           if(entityModel.creation.dist==null) entityModel.creation.dist = {value:0,type:Distributions.Constant};
           if(entityModel.creation.runOnce==null) entityModel.creation.runOnce = false;
           if(entityModel.creation.runBatch==null&&!entityModel.creation.batchsize) entityModel.creation.batchsize = 1;

@@ -80,10 +80,10 @@ export class Creator{
 
 
   createEntities(entityModels:any[]){
-    entityModels.filter(entityModel=>{return !entityModel.isResource}).forEach(entityModel=>{
+    entityModels.forEach(entityModel=>{
         this.simulation.entityModels.set(entityModel.type,entityModel);
         entityModel.creation.quantity = entityModel.creation.quantity || 1;
-        this.simulation.recorder.addEntityStats(entityModel.type);
+        if(!entityModel.isResource)  this.simulation.recorder.addEntityStats(entityModel.type);
         this.simulation.setConventions(entityModel);
         if(!Entity.counter.has(entityModel.type)) Entity.counter.set(entityModel.type,{value:1});
 
@@ -112,10 +112,14 @@ export class Creator{
 
             if(entityModel.isResource)
             {
+                    
+               yield *c.createGeneral(eModel,c,c.createResource);
+               
+                c.simulation.recorder.recordResourceCreate(entityModel.type,entityModel.creation.quantity);
 
             }else{
                 
-               yield *c.createGeneral(eModel,c,c.createEntity,c.simulation.entities);
+               yield *c.createGeneral(eModel,c,c.createEntity);
 
             }
 
@@ -133,7 +137,7 @@ export class Creator{
     }
 
 
-    *createGeneral(eModel,creator:Creator, fact:Function, array:any[]){
+    *createGeneral(eModel,creator:Creator, fact:Function){
           
                
 
@@ -141,42 +145,64 @@ export class Creator{
                 let modelInstances : any[]  = [];
                 for (let i = 0; i < eModel.creation.quantity ; i++) {
                     
-                        modelInstances.push( this.createEntity(eModel));
+                    let model = fact(eModel,creator);
+                    if(eModel.currentStation) model.currentStation = eModel.currentStation;
+                    modelInstances.push( model);
                 }         
-                modelInstances.forEach(e=>{this.simulation.entities.push(e)})
 
-                if(!eModel.creation.once)
+                if(!eModel.creation.runOnce)
                 {
                     //Create new  SimEvent
                     creator.scehduleCreationYield(eModel);
+                           
+                }
+                else{
+                    if(eModel.creation.quantity===1)
+                    {   
+                          creator.simulation.runtime[eModel.name] = modelInstances[0];
+                    }
+                       
                 }
 
 
                 if(eModel.creation.quantity>1)
                 {
                       if(eModel.creation.createBatch) 
-                        yield *eModel.creation.createBatch(modelInstances,this.simulation);
+                        yield *eModel.creation.createBatch(modelInstances,creator.simulation);
                 }else{
 
                     if(eModel.creation.createInstance) 
-                        yield *eModel.creation.createInstance(modelInstances[0],this.simulation);
+                        yield *eModel.creation.createInstance(modelInstances[0],creator.simulation);
                 }
 
 
     }
 
 
-  createEntity(entityModel) : Entity{
+  createEntity(entityModel,creator:Creator) : Entity{
        let entityInstance = new Entity(entityModel);
        Object.assign(entityInstance,entityModel);
-        this.addEvents(entityModel,entityInstance);
-        this.simulation.recorder.recordEntityCreate(entityInstance);
-        entityInstance.timeEntered = this.simulation.simTime;
+        creator.simulation.entities.push(entityInstance);
 
-        //HER LAGES DET NYE EVENTER---
-        if(entityModel.creation.createInstance) 
-            entityModel.creation.createInstance(entityInstance,this.simulation);
+        creator.addEvents(entityModel,entityInstance);
+
+        creator.simulation.recorder.recordEntityCreate(entityInstance);
+        entityInstance.timeEntered = creator.simulation.simTime;
+
       return entityInstance;
+  }
+
+
+
+
+ createResource(resourceModel,creator:Creator) : Resource{
+     let resource = new Resource(resourceModel);  
+     Object.assign(resource,resourceModel);
+     creator.simulation.resources.push(resource);
+     creator.simulation.resourceBroker.registerResource(resource);
+     creator.simulation.recorder.addResourceStateListeners(resource);
+
+     return resource;
   }
 
 
@@ -188,208 +214,6 @@ export class Creator{
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- async scheduleNextCreation2(entityModel:any){
-
-          let createAt = this.simulation.addRandomValue(entityModel.creation.dist);
-                entityModel.creation.quantity = entityModel.creation.quantity || 1;
-                    let t =entityModel.creation.quantity===1 ?  "create" : "batch";
-                    let n =entityModel.name ? entityModel.name : entityModel.type+Entity.counter.get(entityModel.type).value;
-                    let m = entityModel.creation.quantity===1 ? `${n} created`: ` created batch of ${entityModel.type}s  with batchsize ${entityModel.creation.quantity}`
-                   
-                    this.simulation.setTimer(createAt,t,m).promise.then((simEvent)=>{
-                        this.createModel(entityModel);
-                        
-                        
-
-                    })
- }
-
-
-
-
-
- async scheduleNextCreation(entityModel:any){
-
-          let createAt = this.simulation.addRandomValue(entityModel.creation.dist);
-                entityModel.creation.quantity = entityModel.creation.quantity || 1;
-                    let t =entityModel.creation.quantity===1 ?  "create" : "batch";
-                    let n =entityModel.name ? entityModel.name : entityModel.type+Entity.counter.get(entityModel.type).value;
-                    let m = entityModel.creation.quantity===1 ? `${n} created`: ` created batch of ${entityModel.type}s  with batchsize ${entityModel.creation.quantity}`
-                   
-                    this.simulation.setTimer(createAt,t,m).promise.then((simEvent)=>{
-                        this.createModel(entityModel);
-                        
-                        
-
-                    })
- }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-scheduleCreations(entityModel:any){
-    let simTime =0;
-    let creation = entityModel.creation;
-    let nextCreateTime = creation.runAtZero ? 0 :this.simulation.addRandomValue(entityModel.creation.dist);
-   
-    this.scheduleCreation(simTime,nextCreateTime,entityModel);
-    
-
-    if(creation.runOnce) return;
-     
-    if(creation.repeatInterval || creation.dist) {
-
-
-        while(nextCreateTime<= this.simulation.endTime){
-            simTime = nextCreateTime;
-            nextCreateTime += creation.repeatInterval ?  this.simulation.addRandomValue(creation.repeatInterval)  :  this.simulation.addRandomValue(creation.dist);
-            this.scheduleCreation(simTime,nextCreateTime,entityModel);
-        }
-
-    }
-
-   
-  
-
-}
-
-async scheduleCreation2(entityModel:any)
-{ 
-        let t =entityModel.creation.quantity===1 ?  "create" : "batch";
-        let n =entityModel.name ? entityModel.name : entityModel.type+Entity.counter.get(entityModel.type).value;
-        let m = entityModel.creation.quantity===1 ? `${n} created`: ` created batch of ${entityModel.type}s  with batchsize ${entityModel.creation.quantity}`
-                         
-        let nextCreateTime = entityModel.creation.repeatInterval ?  entityModel.creation.repeatInterval  :  this.simulation.addRandomValue(entityModel.creation.dist);
-           
-        let simEvent = new SimEvent<CreateEntityResult>(this.simulation.simTime,this.simulation.simTime+nextCreateTime,t,m);
-        this.simulation.scheduleEvent2(simEvent,false);
-        await simEvent.promise;
-        this.createEntityInstance(entityModel)
-        if(!entityModel.creation.once)
-        {
-            this.scheduleCreation2(entityModel);
-        }
-      /*  if(entityModel.creation.createBatch || entityModel.creation.createInstance) 
-            return;
-        else{
-            this.simulation.nextStep2();  
-        }  */
-}
-
-async scheduleCreation(simTime:number,nextCreateTime:number,entityModel:any)
-{ 
-        let t =entityModel.creation.quantity===1 ?  "create" : "batch";
-        let n =entityModel.name ? entityModel.name : entityModel.type+Entity.counter.get(entityModel.type).value;
-        let m = entityModel.creation.quantity===1 ? `${n} created`: ` created batch of ${entityModel.type}s  with batchsize ${entityModel.creation.quantity}`
-                         
-
-        let simEvent = new SimEvent<CreateEntityResult>(simTime,nextCreateTime,t,m);
-        this.simulation.scheduleEvent2(simEvent,false);
-        await simEvent.promise;
-            this.createEntityInstance(entityModel)
-           // this.simulation.nextStep();    
-}
-
-
-
- createModel(entityModel){
-          
-          this.createEntityInstance(entityModel);
-          
-            if(!entityModel.creation.runOnce)
-            {
-                if(entityModel.creation.repeatInterval){
-                    
-                    let repeatInterval = this.simulation.addRandomValue(entityModel.creation.repeatInterval);
-                    let t =entityModel.creation.quantity===1 ?  "create" : "batch";
-                    let n =entityModel.name ? entityModel.name : entityModel.type+Entity.counter.get(entityModel.type).value;
-                    let m = entityModel.creation.quantity===1 ? `${n} created`: ` created batch of ${entityModel.type}s  with batchsize ${entityModel.creation.quantity}`
-                   
-                    this.simulation.setTimer(repeatInterval,t,m).promise.then((simEvent)=>{
-                    this.createModel(entityModel);
-                        
-
-                    })
-                    
-                }
-                else{
-                    this.scheduleNextCreation(entityModel);
-                }
-            }
-            else{
-                //Send beskjed om at denne EVENTEN er DONE og at vi kan gå VIDERE...
-            }
-            
-      }
-
- createSingleItem2(entityModel) : Entity{
-                 let entityInstance = new Entity(entityModel);
-                 Object.assign(entityInstance,entityModel);
-                  this.addEvents(entityModel,entityInstance);
-                  this.simulation.recorder.recordEntityCreate(entityInstance);
-                  entityInstance.timeEntered = this.simulation.simTime;
-
-                  //HER LAGES DET NYE EVENTER---
-                  //if(entityModel.creation.createInstance) entityModel.creation.createInstance(entityInstance,this.simulation);
-                return entityInstance;
-            }
-
-
-
-    createEntityInstance(entityModel){
-                let modelInstances : Entity[]  = [];
-                for (let i = 0; i < entityModel.creation.quantity ; i++) {
-                    
-                        modelInstances.push( this.createEntity(entityModel));
-                }         
-                modelInstances.forEach(e=>{this.simulation.entities.push(e)})
-                if(entityModel.creation.quantity>1 && entityModel.creation.createBatch)
-                {
-                    entityModel.creation.createBatch(modelInstances,this.simulation);
-                }
-               
-        }
 
 
   

@@ -35,6 +35,7 @@ import { Reporter } from './services/reporter';
 import { Recorder } from './services/recorder';
 import { Creator } from './services/creator';
 import { Simulator } from './services/simulator';
+import { ResourceBroker } from './services/ResourceBroker';
 
 
 
@@ -75,6 +76,7 @@ export class Simulation implements ISimulation{
   simulationRecords:any[];
   logger:Function;
 
+resourceBroker:ResourceBroker;
   reporter:Reporter;
   recorder:Recorder;
   creator : Creator;

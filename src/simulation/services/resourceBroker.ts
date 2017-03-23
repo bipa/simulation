@@ -54,9 +54,6 @@ export class ResourceBroker{
     
         this.resources = simulation.resources;
 
-        this.resources.forEach(r=>{
-            this.registerResource(r);
-        })
      }
 
 
