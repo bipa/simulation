@@ -228,7 +228,7 @@ constructor(){
                 runOnce:true,
                 quantity:12,
                 createBatch:(patients : Entity[],ctx : Simulation)=>{
-                    ctx.allocateToProperty(patients,ctx.data.patientRooms, "room");
+                    ctx.tasks.allocateToProperty(patients,ctx.data.patientRooms, "room");
                 
                 }    
             }
@@ -253,7 +253,7 @@ constructor(){
                         repeatInterval:this.data.wakeUpDepartmentInterval,
                         action: async (patient : Entity,ctx : Simulation)=>{
                         
-                          if(ctx.yesNo(ctx.data.patientANeedsMedicine)){
+                          if(ctx.tasks.yesNo(ctx.data.patientANeedsMedicine)){
                                /* let seizeResult = await ctx.seize(patient,ctx.data.nursesDepA,ctx.queue("nursesQueue"));
                                 await ctx.walkTo(seizeResult.resource,patient.currentStation);  
                                 await ctx.walkTo(seizeResult.resource,ctx.data.stations.medicine);
@@ -300,17 +300,17 @@ constructor(){
                         
                             ctx.data.stations.patientRooms.forEach(async (patientRoom : Entity) => {
                                 
-                                let enqueueResult = await ctx.enqueue(patientRoom,ctx.queue("nursesQueue"));
+                                let enqueueResult = await ctx.tasks.enqueue(patientRoom,ctx.queue("nursesQueue"));
 
-                                let seizeResult   = await ctx.seizeOneFromManyResources(patientRoom,ctx.data.nursesDepA);
+                                let seizeResult   = await ctx.tasks.seizeOneFromManyResources(patientRoom,ctx.data.nursesDepA);
 
-                                let dequeueResult = await ctx.dequeue(patientRoom,ctx.queue("nursesQueue"));
+                                let dequeueResult = await ctx.tasks.dequeue(patientRoom,ctx.queue("nursesQueue"));
 
-                                let delayResult   = await ctx.delay(patientRoom,seizeResult.resource,ctx.data.machineProcessTime);                
+                                let delayResult   = await ctx.tasks.delay(patientRoom,seizeResult.resource,ctx.data.machineProcessTime);                
                             
-                                let releaseResult = await ctx.release(patientRoom,seizeResult.resource);
+                                let releaseResult = await ctx.tasks.release(patientRoom,seizeResult.resource);
                                 
-                                let disposeResult = await ctx.dispose(patientRoom);
+                                let disposeResult = await ctx.tasks.dispose(patientRoom);
                             });
 
                     }

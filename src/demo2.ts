@@ -86,17 +86,17 @@ constructor(){
                 currentStation : this.data.stations.partStation,
                 createInstance:function *(part : Entity,ctx:Simulation){
                     
-                     yield ctx.enqueue(part,ctx.queue("nursesQueue"));
+                     yield  ctx.tasks.enqueue(part,ctx.queue("nursesQueue"));
 
-                     let seizeResult   = yield ctx.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
+ let seizeResult   = yield  ctx.tasks.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
                    
-                     yield *ctx.dequeue(part,ctx.queue("nursesQueue"));
+                     yield *ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
                     
-                     yield *ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                     yield *ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 
-                     yield ctx.release(part,seizeResult.resource);
+                     yield  ctx.tasks.release(part,seizeResult.resource);
                     
-                     yield  ctx.dispose(part);
+                     yield  ctx.tasks.dispose(part);
                   
 
                 }            

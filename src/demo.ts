@@ -61,30 +61,30 @@ constructor(){
                 dist:this.data.partArrivalDist,
                 createInstance:async (part,ctx:Simulation)=>{
                     
-                    //let dequeueResult = await ctx.seize(part,[ctx.runtime.worker1],ctx.queue("nursesQueue"));
+                    //let dequeueResult = await ctx.tasks.seize(part,[ctx.tasks.runtime.worker1],ctx.tasks.queue("nursesQueue"));
 
                     
-                    let enqueueResult =  await ctx.enqueue(part,ctx.queue("nursesQueue"));
+                    let enqueueResult =  await ctx.tasks.enqueue(part,ctx.queue("nursesQueue"));
 
-                    let seizeResult   = await ctx.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
+                    let seizeResult   = await ctx.tasks.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
                    
                    
-                    let dequeueResult = await ctx.dequeue(part,ctx.queue("nursesQueue"));
+                    let dequeueResult = await ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
                      
                              
-                    let delayResult   = await ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                    let delayResult   = await ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 
                 
-                    let releaseResult = await ctx.release(part,seizeResult.resource);
+                    let releaseResult = await ctx.tasks.release(part,seizeResult.resource);
                     
-                   /* let disposeResult = await ctx.dispose(part);*/
+                   /* let disposeResult = await ctx.tasks.dispose(part);*/
                   
 
                 }            
             }
         },
 
-        {
+        { 
             type:"worker",
             name:"worker1",
             isResource:true

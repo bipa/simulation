@@ -8,6 +8,7 @@ import {Recorder} from '../services/recorder';
 import {Creator} from '../services/creator';
 import {Reporter} from '../services/reporter';
 import {Simulator} from '../services/simulator';
+import {Tasker} from '../services/tasker';
 import {ResourceBroker} from '../services/resourceBroker';
 import {Units,Distributions,Distribution} from '../stats/distributions';
 import {SimEvent,ISimEventResult,ISimEvent} from '../SimEvent';
@@ -49,6 +50,7 @@ export interface ISimulation{
     reporter:Reporter;
     simulator:Simulator;
     resourceBroker:ResourceBroker;
+    tasks:Tasker;
 
     eventEmitter:any;
     runtime:any;

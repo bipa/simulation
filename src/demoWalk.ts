@@ -95,32 +95,32 @@ constructor(){
 
 
 
-                    let seizeResult   = await ctx.seizeResource(patient,ctx.runtime.worker1);
+                    let seizeResult   = await ctx.tasks.seizeResource(patient,ctx.runtime.worker1);
 
                     //The patient needs to walk to the office room
-                    await ctx.walk(patient,patient.currentStation,ctx.data.stations.office);
+                    await ctx.tasks.walk(patient,patient.currentStation,ctx.data.stations.office);
                     // Now the doctor can process the patient
                     //Check if doctor needs t go to the storage room to get medicine
                     //with givn probability
-                    if(ctx.yesNo(ctx.data.storageTripProbability))
+                    if(ctx.tasks.yesNo(ctx.data.storageTripProbability))
                     {
                          let processTimes  = ctx.addRandomValue(ctx.data.doctorProcessTime);
                          //So the doctor processes the patient of half the time
-                         await ctx.delay(patient,seizeResult.resource,processTimes[0]);                
+                         await ctx.tasks.delay(patient,seizeResult.resource,processTimes[0]);                
                          //The doctor needs to go to the storage
-                         await ctx.walk(ctx.runtime.doctor1 as Resource,ctx.data.stations.office,ctx.data.stations.storage )
+                         await ctx.tasks.walk(ctx.runtime.doctor1 as Resource,ctx.data.stations.office,ctx.data.stations.storage )
                          //The doctor gets the correct medicine
 
-                         await ctx.release(patient,seizeResult.resource);
+                         await ctx.tasks.release(patient,seizeResult.resource);
                          
-                         await ctx.dispose(patient);
+                         await ctx.tasks.dispose(patient);
                     }
                     else{
-                        await ctx.delay(patient,seizeResult.resource,ctx.data.machineProcessTime);                
+                        await ctx.tasks.delay(patient,seizeResult.resource,ctx.data.machineProcessTime);                
                 
-                        await ctx.release(patient,seizeResult.resource);
+                        await ctx.tasks.release(patient,seizeResult.resource);
                         
-                        await ctx.dispose(patient);
+                        await ctx.tasks.dispose(patient);
                     }
 
                     
