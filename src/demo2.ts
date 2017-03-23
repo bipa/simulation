@@ -1,7 +1,7 @@
 
 
 
-import {Simulation,ExistingVariables} from './simulation/simulation2'
+import {Simulation,ExistingVariables} from './simulation/simulation'
 import {Distributions} from './simulation/stats/distributions'
 import {Route} from './simulation/model/route'
 import {Station} from './simulation/model/station'

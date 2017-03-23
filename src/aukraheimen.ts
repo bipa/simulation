@@ -254,11 +254,11 @@ constructor(){
                         action: async (patient : Entity,ctx : Simulation)=>{
                         
                           if(ctx.yesNo(ctx.data.patientANeedsMedicine)){
-                                let seizeResult = await ctx.seize(patient,ctx.data.nursesDepA,ctx.queue("nursesQueue"));
+                               /* let seizeResult = await ctx.seize(patient,ctx.data.nursesDepA,ctx.queue("nursesQueue"));
                                 await ctx.walkTo(seizeResult.resource,patient.currentStation);  
                                 await ctx.walkTo(seizeResult.resource,ctx.data.stations.medicine);
                                 await ctx.walkTo(seizeResult.resource,patient.currentStation);    
-
+*/
                                
                           }
                     

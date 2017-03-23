@@ -3,8 +3,8 @@ import {Entity,Allocations} from './model/entity';
 import {IEntity} from './model/ientity';
 import {Station} from './model/station';
 import {Route} from './model/route';
-import {Resource} from './model/resource';
-import {ISimulation} from './model/ISimulation';
+import {Resource,ResourceStates} from './model/resource';
+import {ISimulation} from './model/iSimulation';
 import {SimEvent,ISimEvent,ISimEventResult} from './simEvent';
 
 
@@ -24,7 +24,6 @@ import { Queue, QueueTypes } from './queues/queue';
 import { AbstractQueue } from './queues/abstractQueue';
 
 
-import {PriorityQueue} from './queues/priorityQueue';
 import { FifoQueue } from './queues/fifoQueue';
 
 
@@ -35,8 +34,7 @@ import { Reporter } from './services/reporter';
 import { Recorder } from './services/recorder';
 import { Creator } from './services/creator';
 import { Simulator } from './services/simulator';
-import { ResourceBroker } from './services/ResourceBroker';
-
+import { ResourceBroker, ResourceRequest } from './services/resourceBroker';
 
 
 
@@ -70,17 +68,18 @@ export class Simulation implements ISimulation{
   logRecords:any[];
   stations:Station[];
   routes:Route[];
-  _queue:PriorityQueue<ISimEvent>;
+  
+
   runtime:any;
   random:Random;
   simulationRecords:any[];
   logger:Function;
 
-resourceBroker:ResourceBroker;
   reporter:Reporter;
   recorder:Recorder;
   creator : Creator;
-  simulator : Simulator;
+  simulator: Simulator;
+  resourceBroker:ResourceBroker;
 
   queues : Map<string,AbstractQueue<IEntity>>;
 
@@ -88,9 +87,9 @@ resourceBroker:ResourceBroker;
   baseUnit:Units;
   eventEmitter:any;
   eventCount:number;
-  currentSimEvent: ISimEvent;
   unscheduledEvents:Map<number,ISimEvent>;
   useLogging:boolean;
+  currentSimEvent: ISimEvent;
 
   constructor(model : any) {
     this.useLogging = model.preferences.useLogging || false;
@@ -102,8 +101,11 @@ resourceBroker:ResourceBroker;
     this.endTime = model.preferences.simTime || 1000;
     this.processes = new Map<string,Process>();
     this.queues = new Map<string,AbstractQueue<IEntity>>();
-    this._queue = new PriorityQueue<ISimEvent>((queueItem1,queueItem2)=>  { return queueItem1.deliverAt < queueItem2.deliverAt });
-    this.runtime={};
+   
+   
+   
+   
+   this.runtime={};
     this.logRecords =[];
     this.simulationRecords = [];
     this.logger = model.preferences.logger ||this.defaultLogger;
@@ -111,7 +113,7 @@ resourceBroker:ResourceBroker;
     this.reporter = new Reporter(this);
     this.recorder = new Recorder(this);
     this.creator = new Creator(this);
-
+    this.simulator = new Simulator(this);
 
     this.eventEmitter = new EventEmitter();
     this.eventEmitter.setMaxListeners(100);
@@ -119,16 +121,19 @@ resourceBroker:ResourceBroker;
     this.variables = {};
     this.createVariables(model.variables,this);
     this.eventCount = 0;
-    this.unscheduledEvents = new Map<number,ISimEvent>();
  
     this.entityModels = new Map<string,any>();
 
     this.stations=model.stations;
     this.routes = model.routes;
     this.creator.createVariables(model.variables,this);
-    this.creator.createResources(model.entities);
+    //this.creator.createResources(model.entities);
     //this.creator.createProcesses(model.processes);
     this.creator.createEntities(model.entities);
+
+
+    
+    this.resourceBroker = new ResourceBroker(this);
 
   }
 
@@ -159,161 +164,28 @@ log(message:string,type:string=null, entity:Entity=null){
     this.logger(`${this.simTime.toFixed(3)}${entityMsg}   ${message}`);
 }
 
-
-
-scheduleEvent(simEvent:ISimEvent,duration,message:string=null){
-
-    if(duration==0){
-                    simEvent.isConcurrent = true;
-                    duration = Simulation.epsilon;
-    }
-    simEvent.deliverAt = this.simTime+duration;
-    //simEvent.scheduledAt = this.simTime;
-    simEvent.message = message;
-    simEvent.isScheduled = true;
-    this._queue.add(simEvent);
-    this.unscheduledEvents.delete(simEvent.id);
-}
- 
-
-scheduleEvent2<T extends ISimEventResult>(simEvent : SimEvent<T>, runNext:boolean = true, isInit=false)
-{
-    
-    this._queue.add(simEvent);
-   /* let k =  new Promise<T>((resolve,reject)=>{
-                    this.eventEmitter.once(simEvent.name,(event:SimEvent<T>)=>{
-
-                        resolve(event.result);
-                })
-
-        
-            
-    });
-
-
-    simEvent.promise = k;*/
-
-   // let next = this._queue.peek();
-
-    /*if(runNext && (simEvent.deliverAt === this.simTime || simEvent.deliverAt<=next.deliverAt))
-    {
-        this.nextStep2();
-    }*/
-     if(runNext )
-    {
-        this.nextStep2();
-    }
-
-
-}
-
-
-
-
-setTimer<T extends ISimEventResult>(duration:number=null, type:string = null,message:string=null) : SimEvent<T>{
-
- 
-
-    let simEvent : SimEvent<T> = null;
-    if(duration){        
-        simEvent = new SimEvent<T>(this.simTime,this.simTime+duration,type,message);
-        simEvent.isScheduled = true;
-        this._queue.add(simEvent);
-    }else{
-        if(duration==0){
-            simEvent = new SimEvent<T>(this.simTime,this.simTime+duration,type,message);
-            simEvent.isConcurrent = true;
-            duration = Simulation.epsilon;
-            this._queue.add(simEvent);
-        }else{
-            
-            simEvent = new SimEvent<T>(this.simTime,this.simTime,type,message);
-            this.unscheduledEvents.set(simEvent.id,simEvent);
-        }
-       
-
-    }
-
-    let k =  new Promise<T>((resolve,reject)=>{
-
-            this.eventEmitter.once(simEvent.name,(event:SimEvent<T>)=>{
-
-                resolve(event.result);
-                let i  =0;
-            })
-    }).then(e=>{
-      return simEvent.result;
-   });
- 
-   simEvent.promise = k; 
-
-   
-
-    return simEvent;
-
-
-}
-
-
 nextStep2(){
-      if(this._queue.size ===0 )
-      {
-         /* this.finalize();
-          this.eventEmitter.emit("done", true);*/
-          return;
-      } 
-      
-      
-      let event = this._queue.poll();
-      this.simTime = event.deliverAt;
-      if (event.deliverAt > this.endTime)  {
-          this.finalize();
-          this.eventEmitter.emit("done", true);
-          return;
-      };
-      this.eventCount++;
-      this.currentSimEvent = event;
-     // event.isConcurrent ? this.simTime = event.deliverAt-Simulation.epsilon : this.simTime  = event.deliverAt;
-      if(event.log) this.log(event.message,event.type);
-      //if(this.eventCount>1)
-      event.deliver();
-      this.eventEmitter.emit(event.name, event);
+
+}
+
+ scheduleEvent2(simEvent:any,flag: any){
+
+ }
+
+
+
+ scheduleEvent(simEvent:ISimEvent){
+
+
+    this.simulator.scheduleEvent(simEvent);
     
+ }
+
+setTimer<T>(delay,type=null,message=null) : SimEvent<T>{
+    return null;
 }
 
 
- async nextStep()  {
-    
-   
-      if(this._queue.size ===0 )
-      {
-          this.finalize();
-          this.eventEmitter.emit("done", true);
-          return;
-      } 
-      
-      
-      let event = this._queue.poll();
-      this.simTime = event.deliverAt;
-      if (event.deliverAt > this.endTime)  {
-          this.finalize();
-          this.eventEmitter.emit("done", true);
-          return;
-      };
-      this.eventCount++;
-      event.isConcurrent ? this.simTime = event.deliverAt-Simulation.epsilon : this.simTime  = event.deliverAt;
-      if(event.log) this.log(event.message,event.type);
-      //if(this.eventCount>1)
-      this.eventEmitter.emit(event.name, event);
-        
-        let res = await event.promise;
-          this.nextStep();
-
-   
-    
-     
-
-}
 simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<SimulationResult> {
      let promise = new Promise<SimulationResult>(async(resolve,reject)=>{
          this.eventEmitter.once("done",(success)=>{
@@ -327,7 +199,7 @@ simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<Simula
          });
          this.eventCount = 0;
          this.endTime = endTime || this.endTime;
-         this.nextStep2();
+         this.simulator.step();
     })
 return promise;
   
@@ -362,6 +234,14 @@ return promise;
               runOnce:true
           };
       }else{
+
+            if(entityModel.creation.dist==null&&entityModel.creation.runOnce==null) {
+                entityModel.creation.runOnce=true;
+                entityModel.creation.dist = {value:0,type:Distributions.Constant};
+        
+            }
+
+
           if(entityModel.creation.dist==null) entityModel.creation.dist = {value:0,type:Distributions.Constant};
           if(entityModel.creation.runOnce==null) entityModel.creation.runOnce = false;
           if(entityModel.creation.runBatch==null&&!entityModel.creation.batchsize) entityModel.creation.batchsize = 1;
@@ -503,7 +383,7 @@ route(from:Station, to :Station) : Route{
              let sampleProb = PD.rbinom(1,1,probability);
              return sampleProb[0]==1 ? true : false;
     }
- 
+
 
     splitDurationRandomly(duration : Distribution, count: number=2) : Distribution[]
     {
@@ -535,32 +415,116 @@ route(from:Station, to :Station) : Route{
     }
 
 
-    async seize(entity:Entity,resources:Resource[], queue :AbstractQueue<IEntity>) : Promise<SeizeResult>{
-
-
-            let simEvent = this.setTimer<SeizeResult>();
-
-            let enqueueResult =  await this.enqueue(entity,queue);
-            let seizeResult   = await this.seizeOneFromManyResources(entity,resources);
-            let dequeueResult = await this.dequeue(entity,queue);
-                                
-            simEvent.result  =seizeResult;
-            this.scheduleEvent(simEvent,0,"SEIZE DONE");
-
-            return simEvent.promise.then(e=>{
-                        return simEvent.result;
-                    });;                
-}
+    
 
 
 
 
 
+    seizeOneFromManyResources(entity:Entity,resources:Resource[],quantity : number=1,priority:number=0) {
 
-    seizeOneFromManyResources(entity:Entity,resources:Resource[]) : Promise<SeizeResult>{
 
-            return Seize.seize(this,entity,resources,1);
+
+/*  let message = "";
+            let seizeResult: SeizeResult;
+      
+      
+            let idleResources = resources.filter(r => { return r.state === ResourceStates.idle });
+            if (idleResources && idleResources.length > 0) {
+                let resource = resources[0];
+                this.currentSimEvent.type ="seize";
+                this.currentSimEvent.message = `  ${entity.name} seized ${resource.name}`;
+                this.currentSimEvent.deliverAt = this.simTime;
+                this.currentSimEvent.currentResult = this.inner_seize(entity,resource);
+                return  this.currentSimEvent.currentResult;
+            }
+            else {
+                 resources.forEach(r => {
+                    this.seizeOnIdle(entity,r,this.currentSimEvent);
+                 });
+                this.currentSimEvent.onHold = true;
+            }*/
+
+
+           let req = this.resourceBroker.addRequest(this.currentSimEvent,entity,resources,quantity,priority);
+
+
+            if(req.isDone)
+            {
+                return req.seizeResult;
+            }
+
     }
+
+
+
+
+
+          
+  
+ 
+       seizeOnIdle(entity: Entity, resource: Resource,simEvent : ISimEvent){  
+                   
+            resource.emitter.once("idle", (resource : Resource) => {
+
+
+                
+                     simEvent.type ="seize";
+                     simEvent.message = `  ${entity.name} seized ${resource.name}`;
+                     simEvent.deliverAt = this.simTime;
+                     simEvent.currentResult = this.inner_seize(entity,resource);
+                     this.simulator.scheduleEvent(simEvent);
+
+             
+             
+            });
+            
+        }
+   inner_seize(entity: Entity, resource: Resource, 
+                           ) :SeizeResult {
+                resource.seize(entity);
+                return new SeizeResult(entity, resource);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     seizeResource(entity:Entity,resource:Resource) : Promise<SeizeResult>{
 
@@ -570,28 +534,93 @@ route(from:Station, to :Station) : Route{
 
     }
 
-    release(entity:Entity,resource:Resource) : Promise<ReleaseResult>{
-        return Release.release(this,entity,resource);
+    release(entity:Entity,resource:Resource) {
+          
+
+            this.currentSimEvent.type ="release";
+            this.currentSimEvent.message = `${entity.name} released ${resource.name}`;
+            this.currentSimEvent.currentResult = new ReleaseResult(entity,resource);
+            //yield;
+            resource.idle();
+
     }
 
 
-    delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded): Promise<DelayResult>{
-       return Delay.delay(this,entity,resource,processTimeDist,allocation);
+    *delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded){
+            let processTime = this.addRandomValue(processTimeDist);
+            let timeStampBefore = this.simTime;
+            this.currentSimEvent.deliverAt = this.simTime+processTime;
+            this.currentSimEvent.type ="delay";
+            this.currentSimEvent.message = `  ${entity.name} processed by ${resource.name}`;
+                     
+            resource.process(entity);
+            yield;       
+            this.recorder.recordEntityStat(entity,timeStampBefore,allocation);
     }
 
 
-    enqueue(entity: Entity,queue :AbstractQueue<IEntity>): Promise<EnqueueResult>{
-        return Enqueue.enqueue(this,entity,queue);
+    enqueue(entity: Entity,queue :AbstractQueue<IEntity>) {
+       
+      /*  let simEvent = new SimEvent<EnqueueResult>(this.simTime,this.simTime,"front",`  ${entity.name} is now in front of ${queue.name}`);
+            
+            simEvent.result = new EnqueueResult(entity);
+*/
+
+
+            queue.enqueue(entity);
+            if (queue.length == 1) {  
+                
+                this.currentSimEvent.type ="front";
+                this.currentSimEvent.message = `  ${entity.name} is now in front of ${queue.name}`;
+                
+            }
+            else{
+                 //Listen for the one time the entity is in front....then seize
+                //set this currentSimEvent on HOLD, we dont know when its scheduled
+                let simEvent = this.currentSimEvent;
+                queue.eventEmitter.once(entity.name,  () => {   
+
+                     simEvent.type ="front";
+                     simEvent.message = `  ${entity.name} is now in front of ${queue.name}`;
+                     simEvent.deliverAt = this.simTime;
+                     this.simulator.scheduleEvent(simEvent);
+                    
+            
+                });
+                this.currentSimEvent.onHold = true;
+             }
+
+           
+        
+
     }
 
-    dequeue(entity: Entity,queue :AbstractQueue<IEntity>): Promise<DequeueResult>{
-        return Dequeue.dequeue(this,entity,queue);
+    *dequeue(entity: Entity,queue :AbstractQueue<IEntity>){
+        
+            this.currentSimEvent.currentResult = new DequeueResult(entity);   
+            this.currentSimEvent.type ="dequeue";
+            this.currentSimEvent.message = `${entity.name} has dequeued ${queue.name}`;
+            yield;
+            queue.dequeue();
+            this.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,Allocations.wait);
+
+           
+          
+           
+           
     }
 
 
-    dispose(entity:Entity): Promise<DisposeResult>{
+    dispose(entity:Entity){
     
-            return Dispose.dispose(this,entity);
+            this.currentSimEvent.currentResult = new DisposeResult(entity);   
+            this.currentSimEvent.type ="dispose";
+            this.currentSimEvent.message = `${entity.name} is disposed`;
+           
+            entity.dispose(this.simTime);
+            this.recorder.recordEntityDispose(entity);
+            this.removeEntity(entity);
+            
     }
 
 
@@ -720,6 +749,13 @@ route(from:Station, to :Station) : Route{
 
      return routs;
  }
+
+
+
+
+
+
+
 
 
 static routes(routes:Route[], stations : Station[]): Route[]{
