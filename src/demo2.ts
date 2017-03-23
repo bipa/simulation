@@ -28,8 +28,8 @@ constructor(){
     this.data.stations.inventory = new Station("inventory");
 
     this.data.routes=[
-        new Route(this.data.stations.partStation,this.data.stations.machineStation,20),
-        new Route(this.data.stations.machineStation,this.data.stations.inventory,40),
+        new Route(this.data.stations.partStation,this.data.stations.workerStation,2),
+        new Route(this.data.stations.workerStation,this.data.stations.inventory,4),
     ]
 
     let variables : any                         = {}; //don't remove this line - declaration
@@ -91,6 +91,8 @@ constructor(){
  let seizeResult   = yield  ctx.tasks.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
                    
                      yield *ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
+
+                     yield *ctx.tasks.walk(part,part.currentStation,seizeResult.resource.currentStation);
                     
                      yield *ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 

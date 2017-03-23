@@ -102,6 +102,7 @@ reportResources(){
             this.reporter(`     Total tid:        ${resourceStats.simTime.toFixed(0)}`);
             this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.simTime).toFixed(2)}`);
             this.reporter(`         Busy:         ${(resourceStats.totalBusyTime/resourceStats.simTime).toFixed(2)}`);
+            this.reporter(`         Wait:         ${(resourceStats.totalWaitTime/resourceStats.simTime).toFixed(2)}`);
             this.reporter(`         Transfer:     ${(resourceStats.totalTransferTime/resourceStats.simTime).toFixed(2)}`);
             this.reporter(`         Broken:       ${(resourceStats.totalBrokenTime/resourceStats.simTime).toFixed(2)}`);
             this.reporter(`         Other:        ${(resourceStats.totalOtherTime/resourceStats.simTime).toFixed(2)}`);

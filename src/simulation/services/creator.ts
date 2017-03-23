@@ -55,7 +55,7 @@ export class Creator{
         })
     }
 
-    route(from:Station,to:Station) : Route{
+  route(from:Station,to:Station) : Route{
        let r = this.simulation.routes.find(r=>{
             return r.from===from && r.to===to;
         })
@@ -89,10 +89,6 @@ export class Creator{
 
 
         this.scehduleCreationYield(entityModel);
-
-      //this.scheduleCreation2(entityModel);
-
-     // this.scheduleNextCreation(entityModel);
     })
   }
 
@@ -146,7 +142,7 @@ export class Creator{
                 for (let i = 0; i < eModel.creation.quantity ; i++) {
                     
                     let model = fact(eModel,creator);
-                    if(eModel.currentStation) model.currentStation = eModel.currentStation;
+                    if(eModel.creation.currentStation) model.currentStation = eModel.creation.currentStation;
                     modelInstances.push( model);
                 }         
 

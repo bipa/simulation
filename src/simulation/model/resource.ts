@@ -16,6 +16,7 @@ export class Resource extends Entity{
     busyTime:number=0;
     brokenTime:number=0;
     transferTime:number=0;
+    waitTime:number=0;
     lastStateChangedTime:number=0;
     lastScheduledStateChangedTime :  number  = 0;
 

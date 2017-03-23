@@ -343,11 +343,13 @@ station(name:string) : Station{
     return this.creator.station(name);
 }
 
+route(from:Station,to:Station) : Route{
+       let r = this.routes.find(r=>{
+            return r.from===from && r.to===to;
+        })
 
-route(from:Station, to :Station) : Route{
-    return this.creator.route(from,to);
-}
-
+        return r;
+    }
 
 
 

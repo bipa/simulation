@@ -56,12 +56,36 @@ export class Tasker{
     }
 
 
-    walk(entity:Entity,from:Station,to : Station,speed=1) : Promise<SimEvent<WalkResult>>{
-        return Walk.walk(this.simulation,entity,from,to,speed);
+    *walk(entity:Entity,from:Station,to : Station,speed=1) {
+            speed = entity.speed  || speed;
+            let route = this.simulation.route(from,to);
+            let time  = speed*route.distance;
+            let timeStampBefore = this.simulation.simTime;
+            if(entity instanceof Resource)
+            {
+                   let resource =  entity as Resource;
+                   resource.transfer();
+            }
+
+            this.simulation.currentSimEvent.deliverAt = this.simulation.simTime+time;
+            this.simulation.currentSimEvent.type ="walk";
+            this.simulation.currentSimEvent.message = `${entity.name} is done walking from ${from.name} to ${to.name}`;
+            yield;
+            if(entity instanceof Resource)
+            {
+                    let resource =  entity as Resource;
+                    resource.activateNextState();
+            }
+            else
+            {
+                    this.simulation.recorder.recordEntityStat(entity,timeStampBefore,Allocations.transfer);
+            }
+           
+
     }
  
-    walkTo(entity:Entity,to : Station,speed=1) : Promise<SimEvent<WalkResult>>{
-        return this.walk(entity,entity.currentStation,to,speed);
+    *walkTo(entity:Entity,to : Station,speed=1) {
+       yield *this.walk(entity,entity.currentStation,to,speed);
     }
 
    

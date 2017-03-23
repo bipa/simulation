@@ -103,8 +103,10 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                     resStat.totalBrokenTime+=duration;
                     break;
                 case ResourceStates.seized:
-                    //The resource IS NOT IDLE ANYMORE
-                    //resource+=simulation.simTime - resource.lastStateChangedTime;
+                    //The resource IS NOT SEIZED STATE ANYMORE
+                     resource.waitTime +=duration;
+                     resStat.totalWaitTime +=duration;
+
                     break;
                 case ResourceStates.other:
                     //The resource IS NOT IDLE ANYMORE
@@ -258,8 +260,11 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                             resStat.totalBrokenTime+=duration;
                             break;
                         case ResourceStates.seized:
-                            //The resource IS NOT IDLE ANYMORE
-                            //resource+=simulation.simTime - resource.lastStateChangedTime;
+                            //If time lapses here, it means that the resource is waiting for the entity to come
+                            resource.waitTime +=duration;
+                            resStat.totalWaitTime +=duration;
+
+                            
                             break;
                         case ResourceStates.other:
                             //The resource IS NOT IDLE ANYMORE
