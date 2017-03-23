@@ -84,11 +84,11 @@ export class Creator{
         this.simulation.entityModels.set(entityModel.type,entityModel);
         entityModel.creation.quantity = entityModel.creation.quantity || 1;
         this.simulation.recorder.addEntityStats(entityModel.type);
-      this.simulation.setConventions(entityModel);
-      if(!Entity.counter.has(entityModel.type)) Entity.counter.set(entityModel.type,{value:1});
+        this.simulation.setConventions(entityModel);
+        if(!Entity.counter.has(entityModel.type)) Entity.counter.set(entityModel.type,{value:1});
 
 
-    this.scehduleCreationYield(entityModel);
+        this.scehduleCreationYield(entityModel);
 
       //this.scheduleCreation2(entityModel);
 
@@ -97,8 +97,9 @@ export class Creator{
   }
 
     scehduleCreationYield(entityModel){
-        let createAt = this.simulation.addRandomValue(entityModel.creation.dist);
-        entityModel.creation.quantity = entityModel.creation.quantity || 1;
+         let createAt = entityModel.creation.repeatInterval ?  entityModel.creation.repeatInterval  :  this.simulation.addRandomValue(entityModel.creation.dist);
+       
+         entityModel.creation.quantity = entityModel.creation.quantity || 1;
         let t =entityModel.creation.quantity===1 ?  "create" : "batch";
         let n =entityModel.name ? entityModel.name : entityModel.type+Entity.counter.get(entityModel.type).value;
         let m = entityModel.creation.quantity===1 ? `${n} created`: ` created batch of ${entityModel.type}s  with batchsize ${entityModel.creation.quantity}`
@@ -108,12 +109,17 @@ export class Creator{
         let g  = function *(eModel,c:Creator){
 
             //First create instance and attact to SimEvent
-            let entityInstance = c.createSingleItem(eModel);
-            
-            //Create new craete SimEvent
-            c.scehduleCreationYield(eModel);
-            if(eModel.creation.createInstance) 
-               yield *eModel.creation.createInstance(entityInstance,c.simulation);
+
+            if(entityModel.isResource)
+            {
+
+            }else{
+                
+               yield *c.createGeneral(eModel,c,c.createEntity,c.simulation.entities);
+
+            }
+
+          
               
 
 
@@ -125,6 +131,81 @@ export class Creator{
         this.simulation.scheduleEvent(simEvent);
 
     }
+
+
+    *createGeneral(eModel,creator:Creator, fact:Function, array:any[]){
+          
+               
+
+
+                let modelInstances : any[]  = [];
+                for (let i = 0; i < eModel.creation.quantity ; i++) {
+                    
+                        modelInstances.push( this.createEntity(eModel));
+                }         
+                modelInstances.forEach(e=>{this.simulation.entities.push(e)})
+
+                if(!eModel.creation.once)
+                {
+                    //Create new  SimEvent
+                    creator.scehduleCreationYield(eModel);
+                }
+
+
+                if(eModel.creation.quantity>1)
+                {
+                      if(eModel.creation.createBatch) 
+                        yield *eModel.creation.createBatch(modelInstances,this.simulation);
+                }else{
+
+                    if(eModel.creation.createInstance) 
+                        yield *eModel.creation.createInstance(modelInstances[0],this.simulation);
+                }
+
+
+    }
+
+
+  createEntity(entityModel) : Entity{
+       let entityInstance = new Entity(entityModel);
+       Object.assign(entityInstance,entityModel);
+        this.addEvents(entityModel,entityInstance);
+        this.simulation.recorder.recordEntityCreate(entityInstance);
+        entityInstance.timeEntered = this.simulation.simTime;
+
+        //HER LAGES DET NYE EVENTER---
+        if(entityModel.creation.createInstance) 
+            entityModel.creation.createInstance(entityInstance,this.simulation);
+      return entityInstance;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -163,6 +244,25 @@ export class Creator{
 
                     })
  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -281,7 +381,7 @@ async scheduleCreation(simTime:number,nextCreateTime:number,entityModel:any)
                 let modelInstances : Entity[]  = [];
                 for (let i = 0; i < entityModel.creation.quantity ; i++) {
                     
-                        modelInstances.push( this.createSingleItem(entityModel));
+                        modelInstances.push( this.createEntity(entityModel));
                 }         
                 modelInstances.forEach(e=>{this.simulation.entities.push(e)})
                 if(entityModel.creation.quantity>1 && entityModel.creation.createBatch)
@@ -292,17 +392,15 @@ async scheduleCreation(simTime:number,nextCreateTime:number,entityModel:any)
         }
 
 
-    createSingleItem(entityModel) : Entity{
-                 let entityInstance = new Entity(entityModel);
-                 Object.assign(entityInstance,entityModel);
-                  this.addEvents(entityModel,entityInstance);
-                  this.simulation.recorder.recordEntityCreate(entityInstance);
-                  entityInstance.timeEntered = this.simulation.simTime;
+  
 
-                  //HER LAGES DET NYE EVENTER---
-                  if(entityModel.creation.createInstance) entityModel.creation.createInstance(entityInstance,this.simulation);
-                return entityInstance;
-            }
+
+
+
+
+
+
+
 
 
     addEvents(entityModel,modelInstance){

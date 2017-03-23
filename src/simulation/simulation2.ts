@@ -526,13 +526,13 @@ route(from:Station, to :Station) : Route{
 
     }
 
-    *release(entity:Entity,resource:Resource) {
+    release(entity:Entity,resource:Resource) {
           
 
             this.currentSimEvent.type ="release";
             this.currentSimEvent.message = `${entity.name} released ${resource.name}`;
             this.currentSimEvent.currentResult = new ReleaseResult(entity,resource);
-            yield;
+            //yield;
             resource.idle();
 
     }

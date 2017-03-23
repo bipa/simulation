@@ -3,7 +3,10 @@
 
 import {Simulation,ExistingVariables} from './simulation/simulation2'
 import {Distributions} from './simulation/stats/distributions'
+import {Route} from './simulation/model/route'
+import {Station} from './simulation/model/station'
 import {Entity} from './simulation/model/entity'
+import {Resource} from './simulation/model/resource'
 
 
 export class Demo{
@@ -19,7 +22,15 @@ constructor(){
     this.data.machineProcessTime = {type:Distributions.Exponential, param1:3}
 
 
+    this.data.stations  = {};
+    this.data.stations.partStation = new Station("partStation");
+    this.data.stations.workerStation = new Station("workerStation");
+    this.data.stations.inventory = new Station("inventory");
 
+    this.data.routes=[
+        new Route(this.data.stations.partStation,this.data.stations.machineStation,20),
+        new Route(this.data.stations.machineStation,this.data.stations.inventory,40),
+    ]
 
     let variables : any                         = {}; //don't remove this line - declaration
     variables.kpi                      = {}; //don't remove this line - declaration
@@ -38,8 +49,8 @@ constructor(){
     this.model = {
         data:this.data,
         variables:variables,
-        stations:[],
-        routes:[],
+        stations:this.getFromData(this.data.stations),
+        routes:this.getFromData(this.data.routes),
         entities:this.getEntities(),
         preferences:this.getPreferences()
 
@@ -51,6 +62,18 @@ constructor(){
 
  
   
+ getFromData<T>(obj : any) : T[]
+ {  
+     let a : T[] = [];
+
+    for(let o in obj){
+        let value = obj[o];
+        a.push(value);
+    }
+
+    return a;
+ }
+ 
  
 
  getEntities(){
@@ -60,28 +83,20 @@ constructor(){
             type:"part",
             creation:{
                 dist:this.data.partArrivalDist,
+                currentStation : this.data.stations.partStation,
                 createInstance:function *(part : Entity,ctx:Simulation){
                     
-                    
-
-                    //let dequeueResult = await ctx.seize(part,[ctx.runtime.worker1],ctx.queue("nursesQueue"));
-
-                    
-                     let enqueueResult =  yield ctx.enqueue(part,ctx.queue("nursesQueue"));
+                     yield ctx.enqueue(part,ctx.queue("nursesQueue"));
 
                      let seizeResult   = yield ctx.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
-                   let i =0;
                    
-                     let dequeueResult = yield *ctx.dequeue(part,ctx.queue("nursesQueue"));
-                     let k =0;
-                     
-                     let delayResult   = yield *ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
-                    let j =0;
-                 
-                
-                   let releaseResult = yield *ctx.release(part,seizeResult.resource);
+                     yield *ctx.dequeue(part,ctx.queue("nursesQueue"));
                     
-                   let disposeResult = yield  ctx.dispose(part);
+                     yield *ctx.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                
+                     yield ctx.release(part,seizeResult.resource);
+                    
+                     yield  ctx.dispose(part);
                   
 
                 }            
@@ -91,7 +106,8 @@ constructor(){
         {
             type:"worker",
             name:"worker1",
-            isResource:true
+            isResource:true,
+            currentStation : this.data.stations.workerStation,
         }
 
 
