@@ -2,6 +2,7 @@ import {Injectable, EventEmitter} from '@angular/core';
 import { Http, Response, Headers, RequestOptions } from '@angular/http';
 import {Observable} from 'rxjs/Rx';
 import {AngularFire,FirebaseListObservable} from 'angularfire2';
+import { LoaderService } from '../../spinner.service';
 
 export interface ISimulationModel {
   //entities:Entity[];
@@ -232,6 +233,8 @@ export class EmitterService {
 @Injectable()
 export class DocumentationItems {
 
+
+
 scenarioes : Scenario[] = [];
 projects : SimulationProject[] = [];
 scenarioesPromise:Promise<Scenario[]>;
@@ -246,7 +249,7 @@ private projectsObservable :FirebaseListObservable<SimulationProject[]>;
 
 
 
-constructor(private http: Http, private af:AngularFire){
+constructor(private loaderService : LoaderService, private http: Http, private af:AngularFire){
 
 
           this.scenarioesObservable = af.database.list(`/scenarioes`);
@@ -371,7 +374,7 @@ this.categories.push(this.DOCS[2]);
   async getProject(projectId:string){
         let result =  await this.projectsPromise;
         return result.find(project=>{
-        return project['$key']===projectId;
+            return project['$key']===projectId;
         })
     }
   
@@ -426,13 +429,20 @@ updateScenario(scenario,saveModel){
         let bodyString = JSON.stringify(body); // Stringify payload
         let headers      = new Headers({ 'Content-Type': 'application/json' }); // ... Set content type to JSON
         let options       = new RequestOptions({ headers: headers }); // Create a request option
-
+        this.loaderService.showSpinner = true;
         return this.http.post(this.commentsUrl, body, options) // ...using post request
                          .map((res:Response) => 
-                         res.json()) // ...and calling .json() on the response to return data
-                         .catch((error:any) => 
-                         Observable.throw(error.json().error || 'Server error'))
-                         .toPromise(); //...errors if any
+                              res.json()) // ...and calling .json() on the response to return data
+                         .catch((error:any) => {  
+                            this.loaderService.showSpinner = false;
+                           return Observable.throw(error.json().error || 'Server error')
+                         })                          
+                         .toPromise().then(res=>{
+
+                            this.loaderService.showSpinner = false;
+                            return res;
+
+                         }); //...errors if any
     }
 
 

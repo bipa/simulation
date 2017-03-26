@@ -20,10 +20,15 @@
     </button>
   
   <div style="padding-top: 5px">
-        <span *ngIf="simState!=0">Tid: {{this.simTime}}</span>
-        <span *ngIf="simState==3"> ferdig</span>
+        <span *ngIf="simState!=0">Tid: {{this.simTime}} {{this.baseUnit}}</span>     
         <span *ngIf="simState==1"> pauset</span>
         <span *ngIf="simState==4"> stoppet</span>
+
+    </div>
+ <div style="padding-top: 5px">
+         <md-icon *ngIf="simState==3" mdTooltip="Simuleringen er ferdig" >
+              check
+          </md-icon>
 
     </div>
 
@@ -57,7 +62,7 @@
 
    
      <div fxFlex="30%" fxLayout="row"  style="margin:0 2px;" >
-                    <model-panel fxFlex fxFlex.gt-sm="70%" title="Resultat">
+                    <model-panel fxFlex fxFlex.gt-sm="100%" title="Resultat">
                         <right-button-group>
                             <button id="dragHandle" class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
                                 <md-icon id="dragHandle" class="drag-handle">
@@ -85,20 +90,64 @@
                                  
                                    
                                    
-                                    <ngx-datatable-column    [frozenLeft]="true"  name="Variabel" maxWidth="200">
+                                    <ngx-datatable-column    [frozenLeft]="true"  name="Variabel" >
                                     <template let-row="row" ngx-datatable-cell-template>
                                         <strong>{{row.name}}</strong>
                                     </template>
                                     </ngx-datatable-column>
                                     <ngx-datatable-column  width="100" *ngFor="let scenario of scenarioes" name="{{scenario.name}}" >
                                     <template let-row="row" ngx-datatable-cell-template>
-                                       <div style="text-align: center"><strong>{{row[scenario.name]}}</strong></div> 
+                                       <div style="text-align: center"><strong>{{row[scenario.name] | number : '1.2-2'}}</strong></div> 
                                     </template>
                                     </ngx-datatable-column>                                  
                                 </ngx-datatable>
                         </panel-content>
                     </model-panel>
-                     <model-panel  fxFlex fxFlex.gt-sm="30%"  title="Logg">
+                   
+     </div>
+     <div fxFlex="70%" fxLayout="row"  style="margin:0 2px;" >
+                    <model-panel   fxFlex fxFlex.gt-sm="55%"  title="Grafer">
+                        <right-button-group>
+                            <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
+                                <md-icon>
+                                    drag_handle
+                                </md-icon>
+                            </button> 
+                            <button class="close-button" md-icon-button type="button" (click)="closePanel('graphs')" [mdTooltip]="'Lukk vindu'">
+                                <md-icon>
+                                    close
+                                </md-icon>
+                            </button>
+                        </right-button-group>
+                        <panel-content>
+                              <!-- <div  id="testc"></div>-->
+                         
+                           <!-- <div *ngFor="let chart of simulation.selectedScenario.model.charts" id="{{chart.id}}"></div>-->
+                            <zingchart *ngFor="let chart of charts" [chart]="chart"></zingchart>
+                        </panel-content>
+                    </model-panel>
+
+                <!--    <model-panel  fxFlex fxFlex.gt-sm="40%"  title="Animasjon">
+                        <right-button-group>
+                            <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
+                                <md-icon>
+                                    drag_handle
+                                </md-icon>
+                            </button> 
+                            <button class="close-button" md-icon-button type="button" (click)="closePanel('animation')" [mdTooltip]="'Lukk vindu'">
+                                <md-icon>
+                                    close
+                                </md-icon>
+                            </button>
+                        </right-button-group>
+                        <panel-content>
+                            <div class="animation-canvas">
+                                <div class="background" ></div>
+                            </div>
+                        </panel-content>
+                    </model-panel>-->
+
+                      <model-panel  fxFlex fxFlex.gt-sm="45%"  title="Logg">
                         <right-button-group>
                             <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
                                 <md-icon>
@@ -165,51 +214,7 @@
                                     </ngx-datatable-column>
                                 </ngx-datatable>
                         </panel-content>
-                    </model-panel>
-     </div>
-     <div fxFlex="70%" fxLayout="row"  style="margin:0 2px;" >
-                    <model-panel   fxFlex fxFlex.gt-sm="60%"  title="Grafer">
-                        <right-button-group>
-                            <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
-                                <md-icon>
-                                    drag_handle
-                                </md-icon>
-                            </button> 
-                            <button class="close-button" md-icon-button type="button" (click)="closePanel('graphs')" [mdTooltip]="'Lukk vindu'">
-                                <md-icon>
-                                    close
-                                </md-icon>
-                            </button>
-                        </right-button-group>
-                        <panel-content>
-                              <!-- <div  id="testc"></div>-->
-                         
-                           <!-- <div *ngFor="let chart of simulation.selectedScenario.model.charts" id="{{chart.id}}"></div>-->
-                            <zingchart *ngFor="let chart of charts" [chart]="chart"></zingchart>
-                        </panel-content>
-                    </model-panel>
-
-                    <model-panel  fxFlex fxFlex.gt-sm="40%"  title="Animasjon">
-                        <right-button-group>
-                            <button class="drag-handle" md-icon-button type="button" (click)="drag()" [mdTooltip]="'Drag & Drop'">
-                                <md-icon>
-                                    drag_handle
-                                </md-icon>
-                            </button> 
-                            <button class="close-button" md-icon-button type="button" (click)="closePanel('animation')" [mdTooltip]="'Lukk vindu'">
-                                <md-icon>
-                                    close
-                                </md-icon>
-                            </button>
-                        </right-button-group>
-                        <panel-content>
-                            <div class="animation-canvas">
-                                <div class="background" ></div>
-                            </div>
-                        </panel-content>
-                    </model-panel>
-
-
+                    </model-panel>        
 
      </div>
     

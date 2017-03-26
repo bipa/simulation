@@ -1,5 +1,6 @@
-import {Component, ViewEncapsulation} from '@angular/core';
+import {Component, ViewEncapsulation,OnInit,AfterViewInit} from '@angular/core';
 import {Router} from '@angular/router';
+import { LoaderService } from './spinner.service';
 
 
 @Component({
@@ -11,13 +12,31 @@ import {Router} from '@angular/router';
   },
   encapsulation: ViewEncapsulation.None,
 })
-export class MaterialDocsApp {
+export class MaterialDocsApp implements OnInit   {
   isDarkTheme = true;
   showShadow = false;
+  showLoader = true;
+  loaderService :LoaderService;
 
-  constructor(router: Router) {
+
+  constructor(loaderService: LoaderService, router: Router) {
+
+    this.loaderService = loaderService;
     router.events.subscribe(data => {
       this.showShadow = data.url.startsWith('/components');
     });
+    
+  }
+
+
+   ngOnInit() {
+         this.loaderService.status.subscribe((val: boolean) => {
+                  this.showLoaderFunc(val);
+       });
+    }
+    
+  
+  showLoaderFunc(val :boolean){
+      this.showLoader=val;
   }
 }

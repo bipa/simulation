@@ -3,6 +3,7 @@
 export enum Units{
 
         Minute =0,
+        Seconds,
         Hour,
         Day,
         Week,

@@ -22,13 +22,16 @@ projectId:string;
 scenarioes:Scenario[] = [];
 selectedScenario : Scenario;
 
+baseScale : number;
+baseUnit : string;
+
 charts=[];
 
-simState : number = 0; //0 means stopped, 1 means halted, 2 means isrunning, 3 means done
+simState : number = -1; //0 means stopped, 1 means halted, 2 means isrunning, 3 means done
 simTime:number=0;
-totalSimTime : number = 2*365*24*60; //two years
+totalSimTime : number; //two years
 delay:number=1;
-speed:number=100;
+speed:number=1;//1 unit time
 
 rows=[];
 events=[];
@@ -39,15 +42,11 @@ minHeight = 450;
  constructor(
                 private _route: ActivatedRoute,
                 private zone: NgZone,
-              public docItems: DocumentationItems) {
-                super();
-   _route.parent.params.subscribe(p => {
-
-            this.getScenarioes(p);
-    
-
-
-        });
+                public docItems: DocumentationItems) {
+                    super();
+                    _route.parent.params.subscribe(p => {
+                        this.getScenarioes(p);
+                });
 
     
   }
@@ -73,14 +72,49 @@ ngOnInit(){
             
         });
 
+        
+          this.setPreferences();
+        
+          if(this.simState===-1)
+          {
 
-         this.getScenarioRows();
-         this.initCharts();
-         this.simState = 0;
+            this.getScenarioRows();
+            this.initCharts();
+            this.simState=0;
+          }
+
      
     }
 
+setPreferences(){
 
+
+
+  this.baseScale = this.selectedScenario.runtimeModel.preferences.baseScale;
+  this.baseUnit = this.selectedScenario.runtimeModel.preferences.baseUnit;
+  this.totalSimTime = this.selectedScenario.runtimeModel.preferences.simTime;
+  
+
+         
+          switch (this.selectedScenario.runtimeModel.preferences.baseUnit) {
+            case 1:
+              this.baseUnit = "seconds";
+            case 0:
+              this.baseUnit = "minutes";
+            case 2:
+              this.baseUnit = "hours";
+            case 3:
+              this.baseUnit = "days";
+            case 4:
+              this.baseUnit = "weeks";
+          
+            default:
+              this.baseUnit = "minutes";
+          }
+ 
+
+
+}
 
 initCharts(){
     this.scenarioes.forEach(scenario=>{
@@ -109,6 +143,9 @@ initCharts(){
                     });
 
               Object.assign(newChart,chart);
+
+              newChart["sim-data"].timeScale = this.baseScale;
+
               //newChart.scenarioes.push(scenario);
               if(isNew){
                       this.charts.push(newChart);
@@ -209,7 +246,7 @@ updateNextLog(scenario : Scenario){
 
 updateNextVariable(scenario : Scenario){
   
-        if(scenario.runtimeModel.nextRecord && this.simTime>=scenario.runtimeModel.nextRecord.simtime){
+        if(scenario.runtimeModel.nextRecord && this.simTime>=scenario.runtimeModel.nextRecord.simTime){
           let variableRow  = this.rows.find(r=>{return r.name==scenario.runtimeModel.nextRecord.name });
           variableRow[scenario.name] = scenario.runtimeModel.nextRecord.value;
           this.updateNextRecord(scenario);
@@ -267,7 +304,7 @@ simulate(){
   {
         setTimeout(()=>{
 
-        //update simtime increases by 100
+        //update simtime increases by 1 unit time
         this.simTime+=this.speed;
         
 

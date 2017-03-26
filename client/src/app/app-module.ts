@@ -30,6 +30,7 @@ import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import {AngularFireModule} from 'angularfire2';
 import {firebaseConfig} from './../environments/firebase.config';
 import 'hammerjs';
+import {LoaderService} from './spinner.service';
 
  
 
@@ -64,7 +65,7 @@ import 'hammerjs';
     MaterialModule.forRoot(),
     FlexLayoutModule.forRoot(),
     AngularFireModule.initializeApp(firebaseConfig),
-    routing,
+    routing, 
   ],
   entryComponents:[
     NewScenarioDialog,
@@ -73,6 +74,7 @@ import 'hammerjs';
   providers: [
     Location,
     ComponentPageTitle,
+    LoaderService,
     {provide: LocationStrategy, useClass: PathLocationStrategy},
   ],
   bootstrap: [MaterialDocsApp],

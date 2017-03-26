@@ -92,7 +92,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                 case ResourceStates.transfer:
                     //The resource IS NOT IDLE ANYMORE
                     resource.transferTime+=duration;
-                    resStat.totalTransferTime+=duration; 
+                    resStat.totalTransferTime+=duration;
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTime,resStat.totalTransferTime);
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTimePercentage,resStat.totalTransferTime/totalCurrentScheduledTime);
                     
@@ -106,6 +106,9 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                     //The resource IS NOT SEIZED STATE ANYMORE
                      resource.waitTime +=duration;
                      resStat.totalWaitTime +=duration;
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalWaitTime,resStat.totalWaitTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalWaitTimePercentage,resStat.totalWaitTime/totalCurrentScheduledTime);
+                   
 
                     break;
                 case ResourceStates.other:

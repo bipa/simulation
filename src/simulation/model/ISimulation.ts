@@ -39,7 +39,7 @@ export interface ISimulation{
     log : (a:string,b?:string)=>void;
 
     finalize:()=>void;
-    setConventions:(a:string)=> void;
+    setCreationConventions:(a:string)=> void;
     addRandomValue:(d:Distribution)=>number;
     scheduleEvent2:(e :ISimEvent,b?: boolean)=>void;
     scheduleEvent:(e :ISimEvent,d?:number,m?:string)=>void;

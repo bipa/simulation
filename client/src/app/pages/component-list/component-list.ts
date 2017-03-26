@@ -4,6 +4,7 @@ import {ActivatedRoute} from '@angular/router';
 import {ComponentPageTitle} from '../page-title/page-title';
 import {MdDialog, MdDialogRef} from '@angular/material';
 
+
 @Component({
   selector: 'app-components',
   templateUrl: './component-list.html',

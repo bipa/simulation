@@ -1,2 +1,11 @@
 <app-navbar [class.md-elevation-z6]="showShadow"></app-navbar>
-<router-outlet></router-outlet>
+
+<router-outlet>
+    <div *ngIf="loaderService.showSpinner" class="loading"> 
+        <div class="overlay"> </div>
+            <md-progress-circle
+                color="primary"
+                mode="indeterminate">
+            </md-progress-circle>
+   </div>
+</router-outlet>

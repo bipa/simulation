@@ -74,11 +74,10 @@ export class Simulation implements ISimulation{
   simulator: Simulator;
   resourceBroker:ResourceBroker;
   tasks:Tasker;
-
+charts:any;
   queues : Map<string,AbstractQueue<IEntity>>;
-
+preferences:any;
   endTime:number;
-  baseUnit:Units;
   eventEmitter:any;
   eventCount:number;
   unscheduledEvents:Map<number,ISimEvent>;
@@ -88,16 +87,18 @@ export class Simulation implements ISimulation{
   constructor(model : any) {
     this.useLogging = model.preferences.useLogging || false;
     this.random = new Random(model.preferences.seed);
-    this.baseUnit = model.preferences.baseUnit || Units.Minute;
+    model.preferences.baseUnit = model.preferences.baseUnit || Units.Minute;
+    model.preferences.baseScale = this.setTimeScale(model.preferences.baseUnit);
     this.simTime = 0;
     this.entities = [];
     this.resources = [];
-    this.endTime = model.preferences.simTime || 1000;
+    model.preferences.simTime =  (model.preferences.simTime || 1000)*model.preferences.baseScale;
+    this.endTime =model.preferences.simTime;
     this.processes = new Map<string,Process>();
     this.queues = new Map<string,AbstractQueue<IEntity>>();
    
-   
-   
+   this.preferences = model.preferences;
+   this.charts = model.charts;
    
    this.runtime={};
     this.logRecords =[];
@@ -120,6 +121,7 @@ export class Simulation implements ISimulation{
 
     this.stations=model.stations;
     this.routes = model.routes;
+    this.runtime.variables = model.variables;
     this.creator.createVariables(model.variables,this);
     //this.creator.createProcesses(model.processes);
     this.creator.createEntities(model.entities);
@@ -179,16 +181,29 @@ setTimer<T>(delay,type=null,message=null) : SimEvent<T>{
 }
 
 
-simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<SimulationResult> {
-     let promise = new Promise<SimulationResult>(async(resolve,reject)=>{
+simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<any> {
+     let promise = new Promise<any>(async(resolve,reject)=>{
          this.eventEmitter.once("done",(success)=>{
+             let result: any= {};
+        let rtScenario = {
+                            runtimeModel:{
+                                charts:this.charts,
+                                variables: this.runtime.variables,
+                                data:this.data,
+                                preferences:this.preferences,
+                                simulationRecords:null,
+                                logRecords:null
+                            }
 
+            }
             let simRes = new SimulationResult();
             simRes.logRecords  = this.logRecords;
             simRes.simulationRecords = this.simulationRecords;
             //simRes.statistics = this.recorder.statistics.report();
-            
-             resolve(simRes);
+            rtScenario.runtimeModel.simulationRecords = this.simulationRecords;
+            rtScenario.runtimeModel.logRecords = this.logRecords;
+            result.scenario = rtScenario;
+             resolve(result);
          });
          this.eventCount = 0;
          this.endTime = endTime || this.endTime;
@@ -216,7 +231,7 @@ return promise;
 
 
 
- setConventions(entityModel:any){
+ setCreationConventions(entityModel:any){
           
       if(!entityModel.creation){
           entityModel.creation = {
@@ -239,6 +254,7 @@ return promise;
           if(entityModel.creation.runOnce==null) entityModel.creation.runOnce = false;
           if(entityModel.creation.runBatch==null&&!entityModel.creation.batchsize) entityModel.creation.batchsize = 1;
 
+        if(entityModel.creation.dist.type==null)entityModel.creation.dist.type = Distributions.Constant;
       }
   }
   
@@ -250,9 +266,8 @@ addRandomValue(dist:Distribution){
     //if dist is just a number, following the default scale
    // if(!(dist instanceof Object) && !(parseInt(dist).isNaN())) return dist;
     
-    let scale = this.setTimeScale(dist.unit  || this.baseUnit);
+    let scale = this.setTimeScale(dist.unit  || this.preferences.baseUnit);
     let value = null;
-    
     switch (dist.type) {
       case Distributions.Constant:
         value  = dist.value*scale;
@@ -284,6 +299,8 @@ addRandomValue(dist:Distribution){
      setTimeScale(unit:Units){
          
           switch (unit) {
+            case Units.Seconds:
+              return 1/60;
             case Units.Minute:
               return 1;
             case Units.Hour:
@@ -452,10 +469,12 @@ export class Variable{
         resourceTotalIdleTime,
         resourceTotalBusyTime,
         resourceTotalTransferTime,
+        resourceTotalWaitTime,
 
         resourceTotalIdleTimePercentage,
         resourceTotalBusyTimePercentage,
         resourceTotalTransferTimePercentage,
+        resourceTotalWaitTimePercentage,
  }
 
 

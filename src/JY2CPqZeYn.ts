@@ -1,6 +1,3 @@
-
-
-
 import {Simulation,ExistingVariables} from './simulation/simulation'
 import {Distributions} from './simulation/stats/distributions'
 import {Route} from './simulation/model/route'
@@ -12,19 +9,22 @@ import {Resource} from './simulation/model/resource'
 export class Demo{
 
 
+logText:"";
 data  :any                        = {}; //don't remove this line
 constants  :any                        = {}; //don't remove this line
 model:any;
-logText:string ="";
-
+variables:any = {};
 constructor(){
-    this.data.partArrivalDist = {type:Distributions.Exponential, param1:5};
-    this.data.machineProcessTime = {type:Distributions.Exponential, param1:3};
-    this.data.workerLunchTime =     {value:20};
-    this.data.workerLunchDuration = { value:5};
+
+    
+this.data.partArrivalDist = {type:Distributions.Exponential, param1:5};
+this.data.machineProcessTime = {type:Distributions.Exponential, param1:3};
+this.data.workerLunchTime =     {value:20};
+this.data.workerLunchDuration = { value:5}; 
 
 
-
+    this.data.stations  = {};
+    
     this.data.stations  = {};
     this.data.stations.partStation = new Station("partStation");
     this.data.stations.workerStation = new Station("workerStation");
@@ -35,37 +35,46 @@ constructor(){
         new Route(this.data.stations.workerStation,this.data.stations.inventory,4),
     ]
 
-    let variables : any                         = {}; //don't remove this line - declaration
-    variables.kpi                      = {}; //don't remove this line - declaration
-    variables.kpi.queueLength = 0;
-    variables.existing = [
-        {type:"part",variable:ExistingVariables.entityTotalWaitTimePercentage,name:"partTotalWaitTimePercentage",display:"Part ventetid %"},
-        {type:"part",variable:ExistingVariables.entityTotalValueAddedTimePercentage,name:"partTotalValueAddedTimePercentage",display:"Part VA tid %"},
-        {type:"part",variable:ExistingVariables.entityTotalTransferTimePercentage,name:"partTotalTransferTimePercentage",display:"Part transfer tid %"},
-        {type:"worker",variable:ExistingVariables.resourceTotalBusyTimePercentage,name:"workerTotalBusyTimePercentage",display:"Worker busy %"},
-        {type:"worker",variable:ExistingVariables.resourceTotalIdleTimePercentage,name:"workerTotalIdleTimePercentage",display:"Worker idle %"},
-        {type:"worker",variable:ExistingVariables.resourceTotalTransferTimePercentage,name:"partTotalTransferTimePercentage",display:"Worker transfer %"},
-    
-    
-    ]
+    let variables : any = {}; //don't remove this line - declaration
+variables.kpi = {}; //don't remove this line - declaration
+variables.existing = [
+    {type:"part",variable:ExistingVariables.entityTotalWaitTimePercentage,name:"partTotalWaitTimePercentage",display:"Part ventetid %"},
+    {type:"part",variable:ExistingVariables.entityTotalValueAddedTimePercentage,name:"partTotalValueAddedTimePercentage",display:"Part VA tid %"},
+    {type:"part",variable:ExistingVariables.entityTotalTransferTimePercentage,name:"partTotalTransferTimePercentage",display:"Part transfer tid %"},
+    {type:"worker",variable:ExistingVariables.resourceTotalBusyTimePercentage,name:"workerTotalBusyTimePercentage",display:"Worker busy %"},
+    {type:"worker",variable:ExistingVariables.resourceTotalIdleTimePercentage,name:"workerTotalIdleTimePercentage",display:"Worker idle %"},
+    {type:"worker",variable:ExistingVariables.resourceTotalTransferTimePercentage,name:"partTotalTransferTimePercentage",display:"Worker transfer %"},
+
+
+]     
+
+   this.variables = variables;
 
     this.model = {
         data:this.data,
-        variables:variables,
-        stations:this.getFromData(this.data.stations),
-        routes:this.getFromData(this.data.routes),
+        variables:this.variables,
         entities:this.getEntities(),
         preferences:this.getPreferences(),
+        stations:this.getFromData(this.data.stations),
+        routes:this.getFromData(this.data.routes),
         charts:this.getCharts()
-
     
 
     };
 
+    //this.model.preferences.logger = this.logger;
 }
 
+  getCharts(){
+    let a = [
+            { variable:"workerTotalBusyTimePercentage"},
+            { variable:"workerTotalIdleTimePercentage"},
+            { variable:"partTotalTransferTimePercentage"}
+];
+    return a;
+    }
+
  
-  
  getFromData<T>(obj : any) : T[]
  {  
      let a : T[] = [];
@@ -78,10 +87,12 @@ constructor(){
     return a;
  }
  
- 
+
+
+
 
  getEntities(){
-    return [
+    let a = [
 
         {
             type:"part",
@@ -117,72 +128,34 @@ constructor(){
             isResource:true,
             creation:{
                 currentStation : this.data.stations.workerStation
-            },
-         /*   plannedEvents:[
-                  {
-                    name:"lunch",
-                    message:"is going to lunch",
-                    dist:this.data.workerLunchTime,
-                    repeatInterval:this.data.workerLunchDuration,
-                    action: function *(worker : Resource,ctx:Simulation){
-                        
-                            ctx.log(`${worker.name} needs FOOD`,"lunch");
-                            
-
-                    }
-                }
-
-
-            ]*/
+            }
             
         }
 
 
-    ];
-}
-
-
-
-
-
-getCharts(){
-    return [
-            { variable:"workerTotalBusyTimePercentage"},
-            { variable:"workerTotalIdleTimePercentage"},
-            { variable:"partTotalTransferTimePercentage"}
-];
-}
-
-
-
+    ];;
+    return a;
+    }
 getPreferences() {
-
-    return {
+     let a = 
+  {
         seed:1234,
         simTime:200,
-        useLogging:true,
-        //logger:this.logger
+        useLogging:true,   
+  };
+    return a;
+}
+
+
+
+
+
+  simulate() : Promise<any>{
+        let simulation = new Simulation(this.model);
+        return  simulation.simulate();
     }
 
 
 
-}
-
-logger =(message:string)=>{
-    this.logText+=message;
-}
-
-  async simulate() {
-        let simulation = new Simulation(this.model);
-        let simRes = await simulation.simulate();
-        simulation.report();
 
 }
-
-
-
-
-}
-
-let d = new Demo();
-d.simulate();

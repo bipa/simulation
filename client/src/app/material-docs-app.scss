@@ -16,3 +16,27 @@ app-navbar {
   position: relative;
   z-index: 10;
 }
+.loading {
+  position: fixed;
+  z-index: 999;
+  height: 2em;
+  width: 2em;
+  overflow: show;
+  margin: auto;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+.overlay{
+
+  position: fixed;
+  z-index: 999;
+  overflow: show;
+  background-color: rgba(0,0,0,0.5);
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}

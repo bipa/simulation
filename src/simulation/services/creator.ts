@@ -84,7 +84,7 @@ export class Creator{
         this.simulation.entityModels.set(entityModel.type,entityModel);
         entityModel.creation.quantity = entityModel.creation.quantity || 1;
         if(!entityModel.isResource)  this.simulation.recorder.addEntityStats(entityModel.type);
-        this.simulation.setConventions(entityModel);
+        this.simulation.setCreationConventions(entityModel);
         if(!Entity.counter.has(entityModel.type)) Entity.counter.set(entityModel.type,{value:1});
 
 
@@ -93,14 +93,14 @@ export class Creator{
   }
 
     scehduleCreationYield(entityModel){
-         let createAt = entityModel.creation.repeatInterval ?  entityModel.creation.repeatInterval  :  this.simulation.addRandomValue(entityModel.creation.dist);
+         let duration = entityModel.creation.repeatInterval ?  entityModel.creation.repeatInterval  :  this.simulation.addRandomValue(entityModel.creation.dist);
        
          entityModel.creation.quantity = entityModel.creation.quantity || 1;
         let t =entityModel.creation.quantity===1 ?  "create" : "batch";
         let n =entityModel.name ? entityModel.name : entityModel.type+Entity.counter.get(entityModel.type).value;
         let m = entityModel.creation.quantity===1 ? `${n} created`: ` created batch of ${entityModel.type}s  with batchsize ${entityModel.creation.quantity}`
                    
-        let simEvent = new SimEvent<any>(this.simulation.simTime,createAt,"create",m);
+        let simEvent = new SimEvent<any>(this.simulation.simTime,duration,"create",m);
 
         let g  = function *(eModel,c:Creator){
 
@@ -180,7 +180,7 @@ export class Creator{
        Object.assign(entityInstance,entityModel);
         creator.simulation.entities.push(entityInstance);
 
-        creator.addEvents(entityModel,entityInstance);
+        creator.addEvents(entityModel,entityInstance,creator);
 
         creator.simulation.recorder.recordEntityCreate(entityInstance);
         entityInstance.timeEntered = creator.simulation.simTime;
@@ -194,6 +194,7 @@ export class Creator{
  createResource(resourceModel,creator:Creator) : Resource{
      let resource = new Resource(resourceModel);  
      Object.assign(resource,resourceModel);
+     creator.addEvents(resourceModel,resource,creator);
      creator.simulation.resources.push(resource);
      creator.simulation.resourceBroker.registerResource(resource);
      creator.simulation.recorder.addResourceStateListeners(resource);
@@ -223,19 +224,15 @@ export class Creator{
 
 
 
-    addEvents(entityModel,modelInstance){
+    addEvents(entityModel,modelInstance,creator:Creator){
           
           
            //Should be SET AFTER the creation of an element
             if(entityModel.plannedEvents)
-                entityModel.plannedEvents.forEach(async  plannedEvent=>{
+                entityModel.plannedEvents.forEach(function(plannedEvent) {
                     
-                    // let plannedEvent = new PlannedEvent(e);
-                    // this.model.addPlannedEvent(plannedEvent);
-                    plannedEvent.logMessage = plannedEvent.logMessage || plannedEvent.name;
-                    let startTime = this.simulation.addRandomValue(plannedEvent.dist);
-                    await this.simulation.setTimer(startTime).promise
-                            this.schedulePlannedEvent(plannedEvent,modelInstance);
+                        let duration = creator.simulation.addRandomValue(plannedEvent.dist);
+                        creator.schedulePlannedEventYield(plannedEvent,modelInstance,duration,creator);
                     
                     
                 });
@@ -251,16 +248,16 @@ export class Creator{
                         let next = 0;
                         for (var i = 0; i < randomEvent.numberOfRuns; i++) {
                            
-                                next+= this.simulation.addRandomValue(randomEvent.dist);
-                                await this.simulation.setTimer(next).promise
-                                    this.randomEventOccured(randomEvent,modelInstance);
+                                next+= creator.simulation.addRandomValue(randomEvent.dist);
+                                await creator.simulation.setTimer(next).promise
+                                    creator.randomEventOccured(randomEvent,modelInstance);
                                 
                         }
                     }
                     else{
-                        let startTime = this.simulation.addRandomValue(randomEvent.dist);
-                        await this.simulation.setTimer(startTime).promise
-                                    this.scheduleRandomEvent(randomEvent,modelInstance);
+                        let startTime = creator.simulation.addRandomValue(randomEvent.dist);
+                        await creator.simulation.setTimer(startTime).promise
+                                    creator.scheduleRandomEvent(randomEvent,modelInstance);
                         
                     }
                      
@@ -271,6 +268,50 @@ export class Creator{
             
           
       }
+
+
+
+schedulePlannedEventYield(plannedEvent,modelInstance,duration,creator:Creator ){
+       
+                    
+        plannedEvent.logMessage = plannedEvent.logMessage || plannedEvent.name; 
+        let simEvent = new SimEvent<any>(creator.simulation.simTime,duration,"planned",`      ${modelInstance.name} ${plannedEvent.logMessage}`  );
+
+        let g  = function *(plannedEvent, modelInstance,creator:Creator){
+
+
+            let duration = creator.simulation.addRandomValue(plannedEvent.repeatInterval);
+            creator.schedulePlannedEventYield(plannedEvent,modelInstance,duration,creator)
+
+            if(plannedEvent.action)
+                yield *plannedEvent.action(modelInstance,creator.simulation)
+        }
+
+
+        simEvent.generator = g(plannedEvent,modelInstance,creator);
+
+        creator.simulation.scheduleEvent(simEvent);
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       
    async schedulePlannedEvent(plannedEvent,modelInstance){
             
@@ -381,38 +422,54 @@ export class Creator{
 
 //VARIABLES
 
-
-    createVariables(variables, ctx){
-        for(let variableName in variables) 
-        {
-            if(Object.keys(variables[variableName]).length>0)
-            {
-
-                this.simulation.variables[variableName] = {};
-
-                    for(let subVariableName in variables[variableName]) 
+   createVariables(variables, ctx){
+                for(let variableName in variables) 
+                {
+                    if(variableName!=="existing")
                     {
-                        if(variableName=="noLog")
-                        {
-                                this.simulation.variables[variableName][subVariableName]=
-                                variables[variableName][subVariableName];
-                        }
-                        else{
-                            this.createVariable(this.simulation.variables[variableName],
-                            subVariableName,
-                            variables[variableName][subVariableName],ctx)
-                        }
+                             if(Object.keys(variables[variableName]).length>0)
+                            {
 
-                    }
-            }else{
-                    this.createVariable(this.simulation.variables,
-                    variableName,
-                    variables[variableName],ctx)
-            }
+                                this.simulation.variables[variableName] = {};
 
-        
+                                    for(let subVariableName in variables[variableName]) 
+                                    {
+                                        if(variableName=="noLog")
+                                        {
+                                                this.simulation.variables[variableName][subVariableName]=
+                                                variables[variableName][subVariableName];
+                                        }
+                                        else{
+                                            this.createVariable(this.simulation.variables[variableName],
+                                            subVariableName,
+                                            variables[variableName][subVariableName],ctx)
+                                        }
+                                        
+                                    }
+                            }else{
+                                    this.createVariable(this.simulation.variables,
+                                    variableName,
+                                    variables[variableName],ctx)
+                            }
+                      }
+                      else{
+                            if(this.simulation.runtime.variables.kpi===null)
+                            {
+                                this.simulation.runtime.variables.kpi = {};
+                            }
+
+                            variables[variableName].forEach(variable=>{
+                                this.simulation.recorder.addExistingVariable(variable);
+                                
+                                this.simulation.runtime.variables.kpi[variable.name] =0;
+                            })
+
+                            
+                            delete this.simulation.runtime.variables.existing;
+                      }
+                      
+                }
         }
-    }
 
 
     createVariable(obj,propName, initValue,ctx){

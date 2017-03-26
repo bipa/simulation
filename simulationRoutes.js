@@ -188,8 +188,12 @@ validate(model){
 
 
  createCodeText(model){
-    return `import {Simulation} from './simulation/simulation'
+    return `import {Simulation,ExistingVariables} from './simulation/simulation'
 import {Distributions} from './simulation/stats/distributions'
+import {Route} from './simulation/model/route'
+import {Station} from './simulation/model/station'
+import {Entity} from './simulation/model/entity'
+import {Resource} from './simulation/model/resource'
 
 
 export class Demo{
@@ -203,17 +207,23 @@ variables:any = {};
 constructor(){
 
     ${model.data.code}
+
+
+    this.data.stations  = {};
+    ${model.stations.code}
+    ${model.routes.code}
+
     ${model.variables.code}
 
-   
+   this.variables = variables;
 
     this.model = {
         data:this.data,
         variables:this.variables,
         entities:this.getEntities(),
         preferences:this.getPreferences(),
-        stations:this.getStations(),
-        routes:this.getRoutes(),
+        stations:this.getFromData(this.data.stations),
+        routes:this.getFromData(this.data.routes),
         charts:this.getCharts()
     
 
@@ -227,15 +237,22 @@ constructor(){
     return a;
     }
 
-  getStations(){
-    let a = ${model.stations.code};
-    return a;
-    }
  
-  getRoutes(){
-    let a = ${model.routes.code};
-    return a;
+ getFromData<T>(obj : any) : T[]
+ {  
+     let a : T[] = [];
+
+    for(let o in obj){
+        let value = obj[o];
+        a.push(value);
     }
+
+    return a;
+ }
+ 
+
+
+
 
  getEntities(){
     let a = ${model.entities.code};
@@ -246,11 +263,11 @@ getPreferences() {
     return a;
 }
 
-logger =(message:string)=>{
-    this.logText+=message;
-}
 
-  simulate() : Promise<string>{
+
+
+
+  simulate() : Promise<any>{
         let simulation = new Simulation(this.model);
         return  simulation.simulate();
     }
