@@ -1,9 +1,8 @@
 
-export interface IEntity{
-    name;
+import {IBase} from './ibase';
 
-    type:string;
 
+export interface IEntity extends IBase{
     enqueue(timestamp:number);
     dequeue(timestamp:number);
 }

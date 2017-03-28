@@ -1,7 +1,8 @@
 
 
+import {IId} from '../model/iId';
 
-export class PriorityQueue<T>{
+export class PriorityQueue<T extends IId>{
 
 
  defaultcomparator : Function  = function (a, b) {
@@ -134,6 +135,29 @@ poll() :T {
     }
     return ans;
 };
+
+remove(predicate : (e:T)=>boolean){
+  
+  let temp = this.filter(el=>{return !predicate(el)})
+  if(temp.length==this.size) return;
+  this.heapify(temp);
+ 
+ 
+
+}
+
+
+filter(predicate : (e:T)=>boolean) : T[]{
+    let array : T[] = [];
+    for(let i =0;i<this.size; ++i){
+        let ia  = this.array[i];
+        if(predicate(ia))
+        {
+            array.push(ia)
+        }
+    }
+    return array;
+}
 
 
 // recover unused memory (for long-running priority queues)

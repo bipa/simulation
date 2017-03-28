@@ -34,7 +34,7 @@ export class Release{
                  
                 
                 resource.activateNextState();
-                if(resource.emitter.listenerCount("idle")===0 && resource.nextState ===ResourceStates.idle)
+                if(resource.emitter.listenerCount("idle")===0)
                 {
                     simulation.nextStep2();
                 }

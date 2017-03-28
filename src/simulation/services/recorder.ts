@@ -1,6 +1,6 @@
 
 import {Resource,ResourceStates,ScheduledStates} from '../model/resource';
-import {Entity,Allocations} from '../model/entity';
+import {Entity,EntityStates} from '../model/entity';
 import {IEntity} from '../model/ientity';
 import {ISimulation} from '../model/iSimulation';
 import {Simulation,Variable,ExistingVariables,SimulationRecord} from '../simulation';
@@ -355,38 +355,38 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         this.entityStats(entity).countStats.enter(this.simulation.simTime);
     }
 
-    recordEntityStat(entity:Entity,  timeStampBefore : number,allocation : Allocations = Allocations.valueAdded){
+    recordEntityStat(entity:Entity,  timeStampBefore : number,allocation : EntityStates = EntityStates.valueAdded){
         
         let entityStat = this.entityStats(entity);
         let duration = this.simulation.simTime - timeStampBefore;
         let totalTime = this.getTotalCurrentTime(entity);
         switch (allocation) {
-            case Allocations.valueAdded:
+            case EntityStates.valueAdded:
                  entity.valueAddedTime+=duration;
                  entityStat.totalValueAddedTime +=duration;
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalValueAddedTime,entityStat.totalValueAddedTime);
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalValueAddedTimePercentage,entityStat.totalValueAddedTime/totalTime);
                    
                 break;
-            case Allocations.wait:
+            case EntityStates.wait:
                  entity.waitTime+=duration;
                  entityStat.totalWaitTime += duration;
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTime,entityStat.totalWaitTime);
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTimePercentage,entityStat.totalWaitTime/totalTime);
               break;
-            case Allocations.nonValueAdded:
+            case EntityStates.nonValueAdded:
                  entity.nonValueAddedTime+=duration;
                  entityStat.totalNonValueAddedTime += duration;
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalNonValueAddedTime,entityStat.totalNonValueAddedTime);
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalNonValueAddedTimePercentage,entityStat.totalNonValueAddedTime/totalTime);
               break;
-            case Allocations.transfer:
+            case EntityStates.transfer:
                  entity.transferTime += duration;
                  entityStat.totalTransferTime += duration;
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalTransferTime,entityStat.totalTransferTime);
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalTransferTimePercentage,entityStat.totalTransferTime/totalTime);
               break;
-            case Allocations.other:
+            case EntityStates.other:
                  entity.otherTime += duration;
                  entityStat.totalOtherTime += duration;
                  this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTime,entityStat.totalOtherTime);

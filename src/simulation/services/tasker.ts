@@ -1,8 +1,9 @@
 
 
-import {Entity,Allocations} from '../model/entity';
+import {IBase} from '../model/ibase';
+import {Entity,EntityStates} from '../model/entity';
 import {IEntity} from '../model/ientity';
-import {Resource} from '../model/resource';
+import {Resource,ResourceStates, InterruptRules} from '../model/resource';
 import {Route} from '../model/route';
 import {Station} from '../model/station';
 import {Process} from '../tasks/process';
@@ -51,12 +52,12 @@ export class Tasker{
 
 //Tasks
 
-    walkEvent(entity:Entity,from:Station,to : Station,speed=1): SimEvent<WalkResult>{
+    walkEvent(entity:IBase,from:Station,to : Station,speed=1): SimEvent<WalkResult>{
         return Walk.walkEvent(this.simulation,entity,from,to,speed);
     }
 
 
-    *walk(entity:Entity,from:Station,to : Station,speed=1) {
+    *walk(entity:IBase,from:Station,to : Station,speed=1) {
             speed = entity.speed  || speed;
             let route = this.simulation.route(from,to);
             let time  = speed*route.distance;
@@ -67,9 +68,21 @@ export class Tasker{
                    resource.transfer();
             }
 
+            this.simulation.currentSimEvent.scheduledAt = this.simulation.simTime;
             this.simulation.currentSimEvent.deliverAt = this.simulation.simTime+time;
             this.simulation.currentSimEvent.type ="walk";
             this.simulation.currentSimEvent.message = `${entity.name} is done walking from ${from.name} to ${to.name}`;
+            this.simulation.cleanSimEvent();
+            if(entity instanceof Resource)
+            {
+                let resource = entity as Resource;
+                this.simulation.currentSimEvent.resources.push(resource);
+            }
+            else{
+                
+                this.simulation.currentSimEvent.entities.push(entity as Entity);
+            }
+            
             yield;
             entity.currentStation = to;
             if(entity instanceof Resource)
@@ -79,13 +92,13 @@ export class Tasker{
             }
             else
             {
-                    this.simulation.recorder.recordEntityStat(entity,timeStampBefore,Allocations.transfer);
+                    this.simulation.recorder.recordEntityStat(entity as Entity,timeStampBefore,EntityStates.transfer);
             }
            
 
     }
  
-    *walkTo(entity:Entity,to : Station,speed=1) {
+    *walkTo(entity:IBase,to : Station,speed=1) {
        yield *this.walk(entity,entity.currentStation,to,speed);
     }
 
@@ -166,8 +179,13 @@ export class Tasker{
                 
                      simEvent.type ="seize";
                      simEvent.message = `  ${entity.name} seized ${resource.name}`;
+                     simEvent.scheduledAt = this.simulation.simTime;
                      simEvent.deliverAt = this.simulation.simTime;
-                     simEvent.currentResult = this.inner_seize(entity,resource);
+                     simEvent.currentResult = this.inner_seize(entity,resource); 
+
+                     this.simulation.cleanSimEvent(simEvent); 
+                     simEvent.resources.push(resource)    
+                     simEvent.entities.push(entity)       
                      this.simulation.simulator.scheduleEvent(simEvent);
 
              
@@ -179,6 +197,91 @@ export class Tasker{
                            ) :SeizeResult {
                 resource.seize(entity);
                 return new SeizeResult(entity, resource);
+    }
+
+
+
+
+
+    interruptResource(resource:Resource) : ISimEvent {
+
+            //search for simEvents where this resource INTERSECTS
+            //NOTICE WE dont know when the interruption is over
+            //Notice, we dont know what is happening afterwards also
+            
+            if(resource.state===ResourceStates.idle) return null;
+
+            let simTime = this.simulation.simTime;
+
+            let filter = (simEvent:ISimEvent)=> {
+                    return simEvent.resources.some(res=>res.name==resource.name) &&
+                            simEvent.scheduledAt<=simTime&&simEvent.deliverAt > simTime;
+            }
+
+            //Should be at most one
+            let simEvents =  this.simulation.simulator._queue.filter(filter)
+
+            this.simulation.simulator._queue.remove(filter);
+
+
+            
+            if(resource.seizedBy)
+            {
+                //this means that the entities are also "interrupted"
+            }
+
+
+
+            if(simEvents.length>0)
+            {
+                let simEvent = simEvents[0];
+                return simEvent;
+            }else{
+                return null;
+            }
+
+
+
+    }
+
+
+
+
+
+    interruptEntity(entity:Entity) : ISimEvent {
+
+            //search for simEvents where this resource INTERSECTS
+            //NOTICE WE dont know when the interruption is over
+            //Notice, we dont know what is happening afterwards also
+            
+            //if(entity.state===ResourceStates.idle) return null;
+
+            let simTime = this.simulation.simTime;
+
+            let filter = (simEvent:ISimEvent)=> {
+                    return simEvent.entities.some(res=>res.name==entity.name) &&
+                            simEvent.scheduledAt<=simTime&&simEvent.deliverAt > simTime;
+            }
+
+            //Should be at most one
+            let simEvents =  this.simulation.simulator._queue.filter(filter)
+
+            this.simulation.simulator._queue.remove(filter);
+
+
+            
+
+
+            if(simEvents.length>0)
+            {
+                let simEvent = simEvents[0];
+                return simEvent;
+            }else{
+                return null;
+            }
+
+
+
     }
 
 
@@ -201,18 +304,18 @@ export class Tasker{
 
 
 
+    startEventFrom(simEvent:ISimEvent,generator:any){
 
+        
 
+        let newSimEvent = new SimEvent(this.simulation.simTime,simEvent.deliverAt,"start");
 
+        newSimEvent.deliverAt = simEvent.deliverAt;
 
+        newSimEvent.generator = generator();
+        this.simulation.scheduleEvent(newSimEvent);
 
-
-
-
-
-
-
-
+    }
 
 
 
@@ -235,23 +338,49 @@ export class Tasker{
             this.simulation.currentSimEvent.type ="release";
             this.simulation.currentSimEvent.message = `${entity.name} released ${resource.name}`;
             this.simulation.currentSimEvent.currentResult = new ReleaseResult(entity,resource);
+            this.simulation.cleanSimEvent();
+            this.simulation.currentSimEvent.resources.push(resource)    
+            this.simulation.currentSimEvent.entities.push(entity)        
             //yield;
-            resource.idle();
+            resource.activateNextState();
 
     }
 
 
-    *delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:Allocations = Allocations.valueAdded){
+
+    *delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:EntityStates = EntityStates.valueAdded){
             let processTime = this.simulation.addRandomValue(processTimeDist);
             let timeStampBefore = this.simulation.simTime;
+            this.simulation.currentSimEvent.scheduledAt = this.simulation.simTime;
             this.simulation.currentSimEvent.deliverAt = this.simulation.simTime+processTime;
             this.simulation.currentSimEvent.type ="delay";
             this.simulation.currentSimEvent.message = `  ${entity.name} processed by ${resource.name}`;
-                     
+            this.simulation.cleanSimEvent();
+            this.simulation.currentSimEvent.resources.push(resource)    
+            this.simulation.currentSimEvent.entities.push(entity)        
             resource.process(entity);
-            yield;       
+            yield;
+            //SHOULD USE SAME PATTERN AS FOR RESOURCES       
             this.simulation.recorder.recordEntityStat(entity,timeStampBefore,allocation);
     }
+
+
+delayResource( resource: Resource, processTimeDist: Distribution,nextResourceState:ResourceStates = ResourceStates.inActive){
+            let processTime = this.simulation.addRandomValue(processTimeDist);
+            let timeStampBefore = this.simulation.simTime;
+            this.simulation.currentSimEvent.scheduledAt = this.simulation.simTime;
+            this.simulation.currentSimEvent.deliverAt = this.simulation.simTime+processTime;
+            this.simulation.currentSimEvent.type ="delay";
+            this.simulation.currentSimEvent.message = `  ${resource.name} delay is done`;
+            this.simulation.cleanSimEvent();
+            this.simulation.currentSimEvent.resources.push(resource)     
+            resource.activateNextState(nextResourceState);
+          
+    }
+
+
+
+
 
 
     enqueue(entity: Entity,queue :AbstractQueue<IEntity>) {
@@ -266,8 +395,9 @@ export class Tasker{
             if (queue.length == 1) {  
                 
                 this.simulation.currentSimEvent.type ="front";
-                this.simulation.currentSimEvent.message = `  ${entity.name} is now in front of ${queue.name}`;
-                
+                this.simulation.currentSimEvent.message = `  ${entity.name} is now in front of ${queue.name}`;               
+                this.simulation.cleanSimEvent(); 
+                this.simulation.currentSimEvent.entities.push(entity)    
             }
             else{
                  //Listen for the one time the entity is in front....then seize
@@ -278,6 +408,9 @@ export class Tasker{
                      simEvent.type ="front";
                      simEvent.message = `  ${entity.name} is now in front of ${queue.name}`;
                      simEvent.deliverAt = this.simulation.simTime;
+                     simEvent.scheduledAt = this.simulation.simTime;
+                     this.simulation.cleanSimEvent(simEvent); 
+                     simEvent.entities.push(entity)    
                      this.simulation.simulator.scheduleEvent(simEvent);
                     
             
@@ -295,9 +428,11 @@ export class Tasker{
             this.simulation.currentSimEvent.currentResult = new DequeueResult(entity);   
             this.simulation.currentSimEvent.type ="dequeue";
             this.simulation.currentSimEvent.message = `${entity.name} has dequeued ${queue.name}`;
+            this.simulation.cleanSimEvent(); 
+            this.simulation.currentSimEvent.entities.push(entity)    
             yield;
             queue.dequeue();
-            this.simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,Allocations.wait);
+            this.simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,EntityStates.wait);
 
            
           
@@ -311,7 +446,8 @@ export class Tasker{
             this.simulation.currentSimEvent.currentResult = new DisposeResult(entity);   
             this.simulation.currentSimEvent.type ="dispose";
             this.simulation.currentSimEvent.message = `${entity.name} is disposed`;
-           
+            this.simulation.cleanSimEvent(); 
+            this.simulation.currentSimEvent.entities.push(entity)    
             entity.dispose(this.simulation.simTime);
             this.simulation.recorder.recordEntityDispose(entity);
             this.simulation.removeEntity(entity);

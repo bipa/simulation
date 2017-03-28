@@ -15,7 +15,7 @@ import {SimEvent,ISimEventResult,ISimEvent} from '../SimEvent';
 
 
 
-export interface ISimulation{
+export interface ISimulation {
 
 
     variables:any;
@@ -39,6 +39,7 @@ export interface ISimulation{
     log : (a:string,b?:string)=>void;
 
     finalize:()=>void;
+    cleanSimEvent:(s?:ISimEvent)=>void;
     setCreationConventions:(a:string)=> void;
     addRandomValue:(d:Distribution)=>number;
     scheduleEvent2:(e :ISimEvent,b?: boolean)=>void;

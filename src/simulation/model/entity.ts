@@ -2,15 +2,16 @@
 import {Resource,ResourceStates} from './resource'
 import {Station} from './station'
 import {IEntity} from './iEntity'
+import {Base} from './base'
 
-let EventEmitter = require('events');
 
-export class Entity implements IEntity{
+export class Entity extends Base implements IEntity{
 
     static counter:Map<string,any>=new Map<string,any>();
 
     finalize:Function;
     type:string;
+
     timeEntered:number =0;
     timeLeft:number =0;
     duration:number =0;
@@ -19,6 +20,10 @@ export class Entity implements IEntity{
     nonValueAddedTime:number =0;
     waitTime:number = 0;
     otherTime:number = 0;
+    lastEnqueuedAt:number =0;
+
+
+
     runtime :any = {};
 
     currentStation:Station;
@@ -27,16 +32,14 @@ export class Entity implements IEntity{
     emitter:any;
     speed:number;
 
-    lastEnqueuedAt:number =0;
 
     constructor(entityModel:any){
-        this.type = entityModel.type;
+        super(entityModel);
         this.speed = entityModel.speed;
         if(!Entity.counter.has(this.type)) Entity.counter.set(this.type,{value:1});
         this.name = entityModel.name || entityModel.type+Entity.counter.get(this.type).value;
         
             Entity.counter.get(this.type).value++;
-            this.emitter = new EventEmitter();
     }
 
 
@@ -60,7 +63,7 @@ export class Entity implements IEntity{
 
 
 
-export enum Allocations{
+export enum EntityStates{
 
         valueAdded =0,
         nonValueAdded,

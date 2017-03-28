@@ -3,6 +3,10 @@
 
 import {Simulation,ExistingVariables} from './simulation/simulation'
 import {Distributions} from './simulation/stats/distributions'
+import {Route} from './simulation/model/route'
+import {Station} from './simulation/model/station'
+import {Entity} from './simulation/model/entity'
+import {Resource,ResourceStates} from './simulation/model/resource'
 
 
 export class Demo{
@@ -14,11 +18,23 @@ model:any;
 logText:string ="";
 
 constructor(){
-    this.data.partArrivalDist = {type:Distributions.Exponential, param1:5}
-    this.data.machineProcessTime = {type:Distributions.Exponential, param1:3}
+    this.data.partArrivalDist = {type:Distributions.Exponential, param1:5};
+    this.data.machineProcessTime = {type:Distributions.Exponential, param1:3};
+    this.data.machineBrokenTime = {type:Distributions.Exponential, param1:40};
+    this.data.workerLunchTime =     {value:20};
+    this.data.workerLunchDuration = { value:5};
 
 
 
+    this.data.stations  = {};
+    this.data.stations.partStation = new Station("partStation");
+    this.data.stations.workerStation = new Station("workerStation");
+    this.data.stations.inventory = new Station("inventory");
+
+    this.data.routes=[
+        new Route(this.data.stations.partStation,this.data.stations.workerStation,2),
+        new Route(this.data.stations.workerStation,this.data.stations.inventory,4),
+    ]
 
     let variables : any                         = {}; //don't remove this line - declaration
     variables.kpi                      = {}; //don't remove this line - declaration
@@ -37,10 +53,11 @@ constructor(){
     this.model = {
         data:this.data,
         variables:variables,
-        stations:[],
-        routes:[],
+        stations:this.getFromData(this.data.stations),
+        routes:this.getFromData(this.data.routes),
         entities:this.getEntities(),
-        preferences:this.getPreferences()
+        preferences:this.getPreferences(),
+        charts:this.getCharts()
 
     
 
@@ -50,6 +67,18 @@ constructor(){
 
  
   
+ getFromData<T>(obj : any) : T[]
+ {  
+     let a : T[] = [];
+
+    for(let o in obj){
+        let value = obj[o];
+        a.push(value);
+    }
+
+    return a;
+ }
+ 
  
 
  getEntities(){
@@ -59,35 +88,38 @@ constructor(){
             type:"part",
             creation:{
                 dist:this.data.partArrivalDist,
-                createInstance:async (part,ctx:Simulation)=>{
+                currentStation : this.data.stations.partStation,
+                createInstance:function *(part : Entity,ctx:Simulation){
                     
-                    //let dequeueResult = await ctx.tasks.seize(part,[ctx.tasks.runtime.worker1],ctx.tasks.queue("nursesQueue"));
+                     yield  ctx.tasks.enqueue(part,ctx.queue("nursesQueue"));
 
-                    
-                    let enqueueResult =  await ctx.tasks.enqueue(part,ctx.queue("nursesQueue"));
+ let seizeResult   = yield  ctx.tasks.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
+                   
+                     yield *ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
 
-                    let seizeResult   = await ctx.tasks.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
-                   
-                   
-                    let dequeueResult = await ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
-                     
-                             
-                    let delayResult   = await ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
-                
-                
-                    let releaseResult = await ctx.tasks.release(part,seizeResult.resource);
+                     yield *ctx.tasks.walkTo(part,seizeResult.resource.currentStation);
                     
-                   /* let disposeResult = await ctx.tasks.dispose(part);*/
+                     yield *ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                
+                     yield  ctx.tasks.release(part,seizeResult.resource);
+                    
+                     yield *ctx.tasks.walkTo(part,ctx.data.stations.inventory);
+
+                     yield  ctx.tasks.dispose(part);
                   
 
                 }            
             }
         },
 
-        { 
+        {
             type:"worker",
             name:"worker1",
-            isResource:true
+            isResource:true,
+            creation:{
+                currentStation : this.data.stations.workerStation
+            }
+            
         }
 
 
@@ -98,7 +130,13 @@ constructor(){
 
 
 
-
+getCharts(){
+    return [
+            { variable:"workerTotalBusyTimePercentage"},
+            { variable:"workerTotalIdleTimePercentage"},
+            { variable:"partTotalTransferTimePercentage"}
+];
+}
 
 
 

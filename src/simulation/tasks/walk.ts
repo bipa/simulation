@@ -3,7 +3,8 @@
 import { SimEvent,ISimEventResult } from '../simEvent';
 import { Simulation } from '../simulation';
 import { Station } from '../model/station';
-import { Entity, Allocations } from '../model/entity';
+import { IBase } from '../model/ibase';
+import { Entity, EntityStates } from '../model/entity';
 import { Resource, ResourceStates } from '../model/resource';
 
 import { ISimulation } from '../model/iSimulation';
@@ -25,7 +26,7 @@ export class Walk{
        }
 
 
-       static walkEvent(simulation:ISimulation,entity:Entity,from:Station,to : Station,speed=1) : SimEvent<WalkResult>{
+       static walkEvent(simulation:ISimulation,entity:IBase,from:Station,to : Station,speed=1) : SimEvent<WalkResult>{
               speed = entity.speed  || speed;
             let route = simulation.route(from,to);
             let time  = speed*route.distance;
@@ -44,7 +45,7 @@ export class Walk{
                 }
                 else
                 {
-                        simulation.recorder.recordEntityStat(entity,timeStampBefore,Allocations.transfer);
+                        simulation.recorder.recordEntityStat(entity as Entity,timeStampBefore,EntityStates.transfer);
                  }
            });
 

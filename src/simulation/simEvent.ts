@@ -1,6 +1,12 @@
 
 
+import {Entity} from './model/entity';
+import {IEntity} from './model/ientity';
+import {Station} from './model/station';
+import {Route} from './model/route';
+import {Resource} from './model/resource';
 
+import {IId} from './model/iId';
 
 
 export class SimEvent<T extends ISimEventResult> implements ISimEvent{
@@ -22,18 +28,23 @@ export class SimEvent<T extends ISimEventResult> implements ISimEvent{
     isConcurrent : boolean = false;
     log : boolean = true;
     callback : Function;
+    entities : Entity[] =[];
+    resources : Resource[] =[];
+    stations : Station[] =[];
+    routes : Route[] =[];
+    delay :number;
 
 
 
     generator:any;
     currentResult:any;
 
-    constructor(scheduledAt:number, deliverAt:number,type:string,message:string){
+    constructor(scheduledAt:number, delay:number,type:string=null,message:string=null){
 
-        if(deliverAt===null) deliverAt = Number.POSITIVE_INFINITY;
-        
+        if(delay===null) delay = Number.POSITIVE_INFINITY;
+        this.delay = delay;
         this.scheduledAt = scheduledAt;
-        this.deliverAt = scheduledAt+deliverAt;
+        this.deliverAt = scheduledAt+delay;
         this.cancelled = false;
         this.type=type;
         this.message = message;
@@ -41,6 +52,7 @@ export class SimEvent<T extends ISimEventResult> implements ISimEvent{
         this.name  = "event"+this.id;
         SimEvent.count ++;
         this.onHold = false;
+        
 
         this.promise =  new Promise<T>((resolve,reject)=>{
                     this.listen((event:SimEvent<T>)=>{
@@ -85,9 +97,10 @@ export class NextResult<T extends ISimEventResult>{
     export interface ISimEventResult{
     }
 
-    export interface ISimEvent{
+    export interface ISimEvent extends IId{
         deliverAt:number;
-        id:number;
+        scheduledAt:number;
+        delay :number;
         message:string;
         type: string;
         name:string;
@@ -98,6 +111,10 @@ export class NextResult<T extends ISimEventResult>{
         deliver:Function;
         onHold: boolean;
         generator:any;
+         entities : Entity[] ;
+        resources : Resource[] ;
+        stations : Station[] ;
+        routes : Route[] ;
         currentResult:any;
         next :() => NextResult<ISimEventResult>;
     } 

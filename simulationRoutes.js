@@ -193,7 +193,7 @@ import {Distributions} from './simulation/stats/distributions'
 import {Route} from './simulation/model/route'
 import {Station} from './simulation/model/station'
 import {Entity} from './simulation/model/entity'
-import {Resource} from './simulation/model/resource'
+import {Resource, ResourceStates} from './simulation/model/resource'
 
 
 export class Demo{

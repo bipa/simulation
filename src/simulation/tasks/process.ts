@@ -1,7 +1,7 @@
 import { Queue, QueueTypes } from '../queues/queue';
 import { FifoQueue } from '../queues/fifoQueue';
 import { AbstractQueue } from '../queues/abstractQueue';
-import { Entity,Allocations } from '../model/entity';
+import { Entity,EntityStates } from '../model/entity';
 import { ISimulation } from '../model/iSimulation';
 import { Resource, ResourceStates } from '../model/resource';
 import { Simulation } from '../simulation';

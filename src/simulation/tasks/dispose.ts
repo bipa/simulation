@@ -2,7 +2,7 @@
 
 import { SimEvent , ISimEventResult} from '../simEvent';
 import { Simulation } from '../simulation';
-import { Entity, Allocations } from '../model/entity';
+import { Entity, EntityStates } from '../model/entity';
 import { Resource, ResourceStates } from '../model/resource';
 import { Distribution } from '../stats/distributions';
 import { ISimulation } from '../model/iSimulation';

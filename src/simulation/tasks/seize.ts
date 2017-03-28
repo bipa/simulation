@@ -4,7 +4,7 @@ import { AbstractQueue } from '../queues/abstractQueue';
 import { SimEvent,ISimEventResult } from '../simEvent';
 import { Simulation } from '../simulation';
 import { Station } from '../model/station';
-import { Entity, Allocations } from '../model/entity';
+import { Entity, EntityStates } from '../model/entity';
 import { IEntity } from '../model/ientity';
 import { Resource, ResourceStates } from '../model/resource';
 import { FifoQueue } from '../queues/fifoQueue';

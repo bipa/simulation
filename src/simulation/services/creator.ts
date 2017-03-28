@@ -240,9 +240,16 @@ export class Creator{
             if(entityModel.randomEvents)
                 entityModel.randomEvents.forEach(async randomEvent=>{
                     
+
+     
+                        let duration = creator.simulation.addRandomValue(randomEvent.dist);
+                        creator.scheduleRandomEventYield(randomEvent,modelInstance,duration,creator);
+                
+
+
                     // let randomEvent = new RandomEvent(e);
                     // this.model.addRandomEvent(randomEvent);
-                    randomEvent.logMessage = randomEvent.logMessage || randomEvent.name;
+                   /* randomEvent.logMessage = randomEvent.logMessage || randomEvent.name;
                     if(randomEvent.numberOfRuns)
                     {
                         let next = 0;
@@ -259,7 +266,7 @@ export class Creator{
                         await creator.simulation.setTimer(startTime).promise
                                     creator.scheduleRandomEvent(randomEvent,modelInstance);
                         
-                    }
+                    }*/
                      
                     
                     
@@ -275,7 +282,7 @@ schedulePlannedEventYield(plannedEvent,modelInstance,duration,creator:Creator ){
        
                     
         plannedEvent.logMessage = plannedEvent.logMessage || plannedEvent.name; 
-        let simEvent = new SimEvent<any>(creator.simulation.simTime,duration,"planned",`      ${modelInstance.name} ${plannedEvent.logMessage}`  );
+        let simEvent = new SimEvent<any>(creator.simulation.simTime,duration,"planned",`${modelInstance.name} ${plannedEvent.message}`  );
 
         let g  = function *(plannedEvent, modelInstance,creator:Creator){
 
@@ -296,6 +303,29 @@ schedulePlannedEventYield(plannedEvent,modelInstance,duration,creator:Creator ){
 
 
 
+
+scheduleRandomEventYield(randomEvent,modelInstance,duration,creator:Creator ){
+       
+                    
+        randomEvent.logMessage = randomEvent.logMessage || randomEvent.name; 
+        let simEvent = new SimEvent<any>(creator.simulation.simTime,duration,"random",`${modelInstance.name} ${randomEvent.message}`  );
+
+        let g  = function *(randomEvent, modelInstance,creator:Creator){
+
+
+            let duration = creator.simulation.addRandomValue(randomEvent.dist);
+            creator.scheduleRandomEventYield(randomEvent,modelInstance,duration,creator)
+
+            if(randomEvent.action)
+                yield *randomEvent.action(modelInstance,creator.simulation)
+        }
+
+
+        simEvent.generator = g(randomEvent,modelInstance,creator);
+
+        creator.simulation.scheduleEvent(simEvent);
+
+    }
 
 
 

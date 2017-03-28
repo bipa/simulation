@@ -1,5 +1,5 @@
 
-import {Entity,Allocations} from './model/entity';
+import {Entity,EntityStates} from './model/entity';
 import {IEntity} from './model/ientity';
 import {Station} from './model/station';
 import {Route} from './model/route';
@@ -265,7 +265,6 @@ addRandomValue(dist:Distribution){
     
     //if dist is just a number, following the default scale
    // if(!(dist instanceof Object) && !(parseInt(dist).isNaN())) return dist;
-    
     let scale = this.setTimeScale(dist.unit  || this.preferences.baseUnit);
     let value = null;
     switch (dist.type) {
@@ -280,6 +279,7 @@ addRandomValue(dist:Distribution){
         break;
     
       default:
+        value  = dist.value*scale;
         break;
     }
     
@@ -386,7 +386,24 @@ route(from:Station,to:Station) : Route{
 
 
 
+cleanSimEvent(simEvent  : ISimEvent = null){
 
+    if(simEvent){
+
+        simEvent.resources.length=0;
+        simEvent.entities.length=0;
+        simEvent.stations.length=0;
+        simEvent.routes.length=0;
+    }
+    else{
+        this.currentSimEvent.resources.length=0;
+        this.currentSimEvent.entities.length=0;
+        this.currentSimEvent.stations.length=0;
+        this.currentSimEvent.routes.length=0;
+    }
+    
+
+}
 
 
 

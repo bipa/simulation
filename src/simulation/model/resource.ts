@@ -1,16 +1,17 @@
 
 import {Queue} from '../queues/queue';
-import {Entity} from './entity';
 import {Distribution} from '../stats/distributions';
+import {Entity} from './entity';
+import {Base} from './base'
 
-export class Resource extends Entity{
+export class Resource extends Base{
 
 
     processTime : Distribution;
     state : ResourceStates;
-    nextState : ResourceStates = ResourceStates.idle;
+    //nextState : ResourceStates = ResourceStates.idle;
     scheduledState:ScheduledStates;
-    seizedBy:Entity;
+    seizedBy:Entity[];
     idleTime:number=0;
     otherTime:number=0;
     busyTime:number=0;
@@ -27,6 +28,7 @@ export class Resource extends Entity{
             this.processTime= model.processTime;
             this.state = ResourceStates.idle;
             this.scheduledState = ScheduledStates.scheduled;
+            this.seizedBy = [];
     }
 
     unSchedule(){
@@ -69,6 +71,12 @@ export class Resource extends Entity{
         this.emitter.emit("busy", entity);
     }
 
+    unSeize(entity:Entity){
+        let index = this.seizedBy.indexOf(entity);
+        if(index>=0){
+            this.seizedBy.splice(index,1);
+        }
+    }
 
     seize(entity : Entity){
  
@@ -77,7 +85,7 @@ export class Resource extends Entity{
 
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.seized;
-        this.seizedBy = entity;
+        this.seizedBy.push(entity);
         this.emitter.emit("onAfterResourceStateChanged", this);
        this.emitter.emit("seized", entity);
     }
@@ -89,7 +97,7 @@ export class Resource extends Entity{
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.idle;
         this.emitter.emit("onAfterResourceStateChanged", this);
-        this.seizedBy = null;
+        this.seizedBy.length = 0;
         this.emitter.emit("idle", this);
     }
 
@@ -101,7 +109,7 @@ export class Resource extends Entity{
 
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.idle;
-        this.seizedBy = null;
+        this.seizedBy.length = 0;
         this.emitter.emit("released", this);
     }
 
@@ -112,7 +120,7 @@ export class Resource extends Entity{
 
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.broken;
-        this.seizedBy = null;
+        this.seizedBy.length = 0;
         this.emitter.emit("onAfterResourceStateChanged", this);
         this.emitter.emit("broken", this);
     }
@@ -120,7 +128,7 @@ export class Resource extends Entity{
     other(){
         
         
-        if(this.state === ResourceStates.broken ) return;
+        if(this.state === ResourceStates.other ) return;
 
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = ResourceStates.other;
@@ -129,10 +137,22 @@ export class Resource extends Entity{
         this.emitter.emit("other", this);
     }
 
+    inActive(){
+        
+        
+        if(this.state === ResourceStates.inActive ) return;
+
+        this.emitter.emit("onBeforeResourceStateChanged", this);
+        this.state = ResourceStates.inActive;
+        this.seizedBy = null;
+        this.emitter.emit("onAfterResourceStateChanged", this);
+        this.emitter.emit("inActive", this);
+    }
+
     activateNextState(nextNextState : ResourceStates = ResourceStates.idle, entity:Entity = null){
         
         
-        switch (this.nextState) {
+        switch (nextNextState) {
             case ResourceStates.idle:
             this.idle();
                 break;
@@ -154,6 +174,9 @@ export class Resource extends Entity{
             case ResourceStates.released:
                 this.release();
                 break;
+            case ResourceStates.inActive:
+                this.inActive();
+                break;
         
             default:
                 break;
@@ -162,7 +185,6 @@ export class Resource extends Entity{
 
 
 
-        this.nextState = nextNextState; 
 
         
     }
@@ -181,6 +203,7 @@ export enum ResourceStates{
         busy,
         broken,
         other,
+        inActive,
     
 
 }
@@ -189,6 +212,14 @@ export enum ScheduledStates{
 
         scheduled =0,
         unScheduled
+    
+
+}
+export enum InterruptRules{
+
+        finish =0,
+        preempt,
+        cancel,
     
 
 }

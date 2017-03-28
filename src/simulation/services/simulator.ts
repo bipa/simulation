@@ -72,6 +72,9 @@ export class Simulator{
                    this.unscheduledEvents.set(simEvent.id,simEvent);
                }
         }
+        else{
+             this.simulation.eventEmitter.emit(simEvent.name, true);
+        }
         
 
 

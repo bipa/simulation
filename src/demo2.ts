@@ -6,7 +6,7 @@ import {Distributions} from './simulation/stats/distributions'
 import {Route} from './simulation/model/route'
 import {Station} from './simulation/model/station'
 import {Entity} from './simulation/model/entity'
-import {Resource} from './simulation/model/resource'
+import {Resource,ResourceStates} from './simulation/model/resource'
 
 
 export class Demo{
@@ -20,6 +20,7 @@ logText:string ="";
 constructor(){
     this.data.partArrivalDist = {type:Distributions.Exponential, param1:5};
     this.data.machineProcessTime = {type:Distributions.Exponential, param1:3};
+    this.data.machineBrokenTime = {type:Distributions.Exponential, param1:40};
     this.data.workerLunchTime =     {value:20};
     this.data.workerLunchDuration = { value:5};
 
@@ -118,22 +119,70 @@ constructor(){
             creation:{
                 currentStation : this.data.stations.workerStation
             },
-         /*   plannedEvents:[
+            plannedEvents:[
                   {
                     name:"lunch",
                     message:"is going to lunch",
                     dist:this.data.workerLunchTime,
-                    repeatInterval:this.data.workerLunchDuration,
+                    repeatInterval:this.data.workerLunchTime,
                     action: function *(worker : Resource,ctx:Simulation){
                         
-                            ctx.log(`${worker.name} needs FOOD`,"lunch");
-                            
+                           let simEvent =  ctx.tasks.interruptResource(worker);
+                           let timeStamp = ctx.simTime;
+                           if(simEvent)
+                           {   
+                               ctx.simulator.scheduleEvent(simEvent);
+                               ctx.tasks.startEventFrom(simEvent,function *(){
+
+                                    //The resource goes to lunch and is set to inactive (default)
+                                    yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
+                                    //the resource becomes idle
+                                    //worker.nextState = ResourceStates.idle;
+                                    worker.activateNextState(ResourceStates.idle);
+                               })
+                            }
 
                     }
                 }
 
 
-            ]*/
+            ],
+            randomEvents:[
+                  {
+                    name:"acute",
+                    message:"is broken",
+                    dist:this.data.machineBrokenTime,
+                    action: function *(worker : Resource,ctx:Simulation){
+                        
+
+                        
+
+                           let simEvent =  ctx.tasks.interruptResource(worker);
+                           if(simEvent)
+                           {   
+                                    //The resource goes to lunch
+                                
+                                    let workLeft  = simEvent.deliverAt - ctx.simTime;
+                                    //The resource goes to lunch and is set to inactive (default)                          
+                                    yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
+                                    //the resource becomes idle
+                                    //worker.nextState = ResourceStates.idle;
+                                    //Continue with the task that was interrupted
+                                    worker.activateNextState(ResourceStates.busy);
+                                    simEvent.deliverAt = ctx.simTime+workLeft;
+                                    //Continue with the task
+                                    ctx.simulator.scheduleEvent(simEvent);
+                            }
+                            else{
+                                       yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
+                                       worker.activateNextState();
+                            }
+
+                    }
+                }
+
+
+            ]
             
         }
 
