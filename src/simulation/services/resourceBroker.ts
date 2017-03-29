@@ -44,6 +44,7 @@ export class ResourceBroker{
     simulation:ISimulation;
 
     requests:ResourceRequest[];
+    pausedEvents:ResourceRequest[];
 
     resources:Resource[];
 
@@ -51,7 +52,7 @@ export class ResourceBroker{
 
         this.simulation = simulation;
         this.requests = [];
-    
+        this.pausedEvents = [];
         this.resources = simulation.resources;
 
      }
@@ -68,8 +69,9 @@ export class ResourceBroker{
 
             //check if there are any requests that want this resource
             let request : ResourceRequest;
+            //PauseRequests
 
-          let requests =   this.requests.filter(req=>{
+             let pRequests =   this.pausedEvents.filter(req=>{
 
                return req.resources.some(res=>{
                     return r.name===res.name;
@@ -77,20 +79,50 @@ export class ResourceBroker{
 
             })
 
-            if(requests.length>0)
+            if(pRequests.length>0)
             {
 
                 //Just pick the first element....here there should be som
                 //selection criteria
 
-                let request = requests[0];
-                this.seizeResource(request,r);
-                    if(request.isDone)
-                    {
-                        this.scheduleSeizeEvent(request);
-                    }
+                let request =pRequests[0];
+                let index = this.pausedEvents.indexOf(request);
+                this.pausedEvents.splice(index,1);
+                request.simEvent.deliverAt = this.simulation.simTime+request.simEvent.delay;
+                this.simulation.simulator.scheduleEvent(request.simEvent);
+                
+    
             }
+            else{
+                     //SeizeRequests
+            let requests =   this.requests.filter(req=>{
 
+                return req.resources.some(res=>{
+                        return r.name===res.name;
+                    })
+
+                })
+
+                if(requests.length>0)
+                {
+
+                    //Just pick the first element....here there should be som
+                    //selection criteria
+
+                    let request = requests[0];
+                    this.seizeResource(request,r);
+                        if(request.isDone)
+                        {
+                            this.scheduleSeizeEvent(request);
+                        }
+                }
+
+                }
+
+
+
+
+           
 
 
         });
@@ -157,7 +189,13 @@ seizeResource(request : ResourceRequest,resource:Resource){
 }
 
  
+addPauseAndResumeRequest(simEvent:ISimEvent,entity, resources:Resource[],priority:number=0){
+    
+     let req = new ResourceRequest(simEvent,entity,resources,resources.length,priority);
 
+     this.pausedEvents.push(req);
+
+}
 
 addRequest(simEvent:ISimEvent,entity: Entity,resources:Resource[],quantity:number,priority:number=0) {
 
@@ -185,9 +223,7 @@ addRequest(simEvent:ISimEvent,entity: Entity,resources:Resource[],quantity:numbe
 scheduleSeizeEvent(request : ResourceRequest){
 
     let index = this.requests.indexOf(request);
-    if(index>=0){
-        this.requests.splice(index,1);
-    }
+     this.requests.splice(index,1);
      request.simEvent.type ="seize";
      request.simEvent.currentResult = request.seizeResult;
      if(request.quantity===1)

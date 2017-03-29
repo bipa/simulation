@@ -24,7 +24,9 @@ export class Simulator{
     constructor(simulation:ISimulation){
 
         this.simulation = simulation;
-        this._queue = new PriorityQueue<ISimEvent>((queueItem1,queueItem2)=>  { return queueItem1.deliverAt < queueItem2.deliverAt });
+        this._queue = new PriorityQueue<ISimEvent>((queueItem1,queueItem2)=>  { 
+            return queueItem1.deliverAt < queueItem2.deliverAt 
+        });
     
 
         this.unscheduledEvents = new Map<number,ISimEvent>();

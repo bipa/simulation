@@ -21,6 +21,7 @@ constructor(){
     this.data.partArrivalDist = {type:Distributions.Exponential, param1:5};
     this.data.machineProcessTime = {type:Distributions.Exponential, param1:3};
     this.data.machineBrokenTime = {type:Distributions.Exponential, param1:40};
+    this.data.machineBrokenDuration = {type:Distributions.Exponential, param1:4};
     this.data.workerLunchTime =     {value:20};
     this.data.workerLunchDuration = { value:5};
 
@@ -128,6 +129,7 @@ constructor(){
                         
                            let simEvent =  ctx.tasks.interruptResource(worker);
                            let timeStamp = ctx.simTime;
+                           worker.setInactiveOnRelease = true;
                            if(simEvent)
                            {   
                                ctx.simulator.scheduleEvent(simEvent);
@@ -157,13 +159,14 @@ constructor(){
                         
 
                            let simEvent =  ctx.tasks.interruptResource(worker);
+                           worker.setState(ResourceStates.broken);
                            if(simEvent)
                            {   
                                     //The resource goes to lunch
                                 
                                     let workLeft  = simEvent.deliverAt - ctx.simTime;
                                     //The resource goes to lunch and is set to inactive (default)                          
-                                    yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
+                                    yield ctx.tasks.delayResource(worker,ctx.data.machineBrokenDuration,ResourceStates.broken)
                                     //the resource becomes idle
                                     //worker.nextState = ResourceStates.idle;
                                     //Continue with the task that was interrupted
@@ -173,7 +176,7 @@ constructor(){
                                     ctx.simulator.scheduleEvent(simEvent);
                             }
                             else{
-                                       yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
+                                       yield ctx.tasks.delayResource(worker,ctx.data.machineBrokenDuration,ResourceStates.broken)
                                        worker.setState(ResourceStates.idle);
                             }
 

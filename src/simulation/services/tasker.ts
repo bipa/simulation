@@ -335,7 +335,14 @@ export class Tasker{
             this.simulation.cleanSimEvent();
             this.simulation.currentSimEvent.resources.push(resource)    
             this.simulation.currentSimEvent.entities.push(entity)  
-            resource.setState(resourceState);
+           
+           if(resource.setInactiveOnRelease){
+               resource.setState(ResourceStates.inActive);
+               resource.setInactiveOnRelease  = false;
+           }else{
+                resource.setState(resourceState);
+           }
+           
             entity.setState(entityState)
 
     }
@@ -343,17 +350,39 @@ export class Tasker{
 
 
     delay(entity: Entity, resource: Resource, processTimeDist: Distribution,resourceState : ResourceStates = ResourceStates.busy, entityState:EntityStates = EntityStates.valueAdded){
-            let processTime = this.simulation.addRandomValue(processTimeDist);
-            let timeStampBefore = this.simulation.simTime;
-            this.simulation.currentSimEvent.scheduledAt = this.simulation.simTime;
-            this.simulation.currentSimEvent.deliverAt = this.simulation.simTime+processTime;
-            this.simulation.currentSimEvent.type ="delay";
-            this.simulation.currentSimEvent.message = `  ${entity.name} processed by ${resource.name}`;
-            this.simulation.cleanSimEvent();
-            this.simulation.currentSimEvent.resources.push(resource)    
-            this.simulation.currentSimEvent.entities.push(entity)        
-            resource.setState(resourceState)
-            entity.setState(entityState)
+
+            if(resource.state===ResourceStates.broken || resource.state===ResourceStates.inActive){
+                //Keep on hold
+                //Delay has started but during the seize, the resource broke down or had some sort of pasue
+                    let processTime = this.simulation.addRandomValue(processTimeDist);
+                    let timeStampBefore = this.simulation.simTime;
+                    let simEvent = this.simulation.currentSimEvent;
+                    simEvent.type ="delay";
+                    simEvent.message = `  ${entity.name} processed by ${resource.name}`;
+                    simEvent.scheduledAt = this.simulation.simTime;
+
+                    simEvent.onHold = true;
+                    this.simulation.resourceBroker.addPauseAndResumeRequest(this.simulation.currentSimEvent,entity,[resource]);
+                    
+
+
+
+            }
+            else{
+                    let processTime = this.simulation.addRandomValue(processTimeDist);
+                    let timeStampBefore = this.simulation.simTime;
+                    this.simulation.currentSimEvent.scheduledAt = this.simulation.simTime;
+                    this.simulation.currentSimEvent.deliverAt = this.simulation.simTime+processTime;
+                    this.simulation.currentSimEvent.type ="delay";
+                    this.simulation.currentSimEvent.message = `  ${entity.name} processed by ${resource.name}`;
+                    this.simulation.cleanSimEvent();
+                    this.simulation.currentSimEvent.resources.push(resource)    
+                    this.simulation.currentSimEvent.entities.push(entity)        
+                    resource.setState(resourceState)
+                    entity.setState(entityState)
+            }
+
+            
             
     }
 

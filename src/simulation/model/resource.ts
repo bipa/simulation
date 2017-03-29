@@ -12,6 +12,7 @@ export class Resource extends Base{
     scheduledState:ScheduledStates;
 
     isSeized :boolean = false;
+    setInactiveOnRelease:boolean = false;
     seizedBy:Entity[];
     
     idleTime:number=0;

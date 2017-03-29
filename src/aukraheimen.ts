@@ -18,7 +18,8 @@ model:any;
 
 constructor(){
 
-    this.data.patientANeedsMedicinePb       = 0.6;
+    this.data.numberOfNurses                = 4;
+    this.data.patientANeedsMedicinePb       = 0.3;
     this.data.patientWakeupDuration         = {type:Distributions.Exponential, param1:30};
     this.data.wakeUpDepartmentTime          = {unit:"hours", value:0}; //wakeup happens in beginning of the day
     this.data.wakeUpDepartmentInterval      = {unit:"days", value:1}; //repeat every 24 hours
@@ -227,9 +228,9 @@ constructor(){
             creation:{
                 runOnce:true,
                 quantity:12,
-                createBatch:(patients : Entity[],ctx : Simulation)=>{
+                createBatch:function*(patients : Entity[],ctx : Simulation){
                     ctx.tasks.allocateToProperty(patients,ctx.data.patientRooms, "room");
-                
+                    ctx.data.patientsA = patients;
                 }    
             }
         }, 
@@ -237,84 +238,46 @@ constructor(){
             type:"nurse",
             creation:{
                 runOnce:true,
-                quantity:4,
-                createInstance:(nurse : Entity,ctx : Simulation)=>{
+                quantity:this.data.numberOfNurses,
+                createInstance:function*(nurse : Entity,ctx : Simulation){
                     nurse.currentStation = ctx.data.stations.base;
                 },    
-                createBatch:(nurses : Entity[],ctx : Simulation)=>{
+                createBatch:function*(nurses : Entity[],ctx : Simulation){
                     ctx.data.nursesDepA = nurses;
                 
-                },
-                plannedEvents:[
-                    {
-                        name:"wakeup",
-                        message:"wakeup department A",
-                        dist:this.data.wakeUpDepartmentTime,
-                        repeatInterval:this.data.wakeUpDepartmentInterval,
-                        action: async (patient : Entity,ctx : Simulation)=>{
-                        
-                          if(ctx.tasks.yesNo(ctx.data.patientANeedsMedicine)){
-                               /* let seizeResult = await ctx.seize(patient,ctx.data.nursesDepA,ctx.queue("nursesQueue"));
-                                await ctx.walkTo(seizeResult.resource,patient.currentStation);  
-                                await ctx.walkTo(seizeResult.resource,ctx.data.stations.medicine);
-                                await ctx.walkTo(seizeResult.resource,patient.currentStation);    
-*/
-                               
-                          }
-                    
-                      /*              
-                          let enqueueResult = await ctx.enqueue(patientRoom,ctx.queue("nursesQueue"));
-
-                          let seizeResult   = await ctx.seizeOneFromManyResources(patientRoom,ctx.data.nursesDepA);
-
-                          let dequeueResult = await ctx.dequeue(patientRoom,ctx.queue("nursesQueue"));
-
-                          let delayResult   = await ctx.delay(patientRoom,seizeResult.resource,ctx.data.machineProcessTime);                
-                          
-                          let releaseResult = await ctx.release(patientRoom,seizeResult.resource);
-                          
-                          let disposeResult = await ctx.dispose(patientRoom);*/
-                        }
-                    }
-                ]
+                }
             }
         },
         {
             type:"aukraheimen",
             name:"aukraheimen",
             creation:{
-                runOnce:true,
-                createInstance: (aukraHeimen : Entity,ctx:Simulation)=>{
-
-
-
-               } 
+                runOnce:true
             },
             plannedEvents:[
-                {
-                    name:"wakeup",
-                    message:"wakeup department A",
-                    dist:this.data.wakeUpDepartmentTime,
-                    repeatInterval:this.data.wakeUpDepartmentInterval,
-                    action: (aukraheimen : Entity,ctx : Simulation)=>{
+                
+                    {
+                        name:"wakeup",
+                        message:"wakeup department A",
+                        dist:this.data.wakeUpDepartmentTime,
+                        repeatInterval:this.data.wakeUpDepartmentInterval,
+                        action: function* (patient : Entity,ctx : Simulation){
                         
-                            ctx.data.stations.patientRooms.forEach(async (patientRoom : Entity) => {
-                                
-                                let enqueueResult = await ctx.tasks.enqueue(patientRoom,ctx.queue("nursesQueue"));
 
-                                let seizeResult   = await ctx.tasks.seizeOneFromManyResources(patientRoom,ctx.data.nursesDepA);
+                            ctx.log("HEI");
 
-                                let dequeueResult = await ctx.tasks.dequeue(patientRoom,ctx.queue("nursesQueue"));
+                          /*if(ctx.tasks.yesNo(ctx.data.patientANeedsMedicine)){
+                                let seizeResult = await ctx.seize(patient,ctx.data.nursesDepA,ctx.queue("nursesQueue"));
+                                await ctx.walkTo(seizeResult.resource,patient.currentStation);  
+                                await ctx.walkTo(seizeResult.resource,ctx.data.stations.medicine);
+                                await ctx.walkTo(seizeResult.resource,patient.currentStation);    
 
-                                let delayResult   = await ctx.tasks.delay(patientRoom,seizeResult.resource,ctx.data.machineProcessTime);                
-                            
-                                let releaseResult = await ctx.tasks.release(patientRoom,seizeResult.resource);
-                                
-                                let disposeResult = await ctx.tasks.dispose(patientRoom);
-                            });
-
+                               
+                          }*/
+                    
+                    
+                        }
                     }
-                }
             ]
         }
 
@@ -349,10 +312,9 @@ getPreferences() {
   async simulate() {
         let simulation = new Simulation(this.model);
         let simRes = await simulation.simulate();
-        //simulation.report();
+        simulation.report();
 
 }
-
 
 
 
