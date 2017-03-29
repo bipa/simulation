@@ -277,9 +277,13 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
     
 
     recordResourceCreate(type : string, count : number){
+        if(!this.statistics.resourceStats.has(type)){
            let res = new ResourceStats(type);
             res.currentScheduled = count;
-            this.statistics.resourceStats.set(type,res);
+            this.statistics.resourceStats.set(type,res);  
+            this.simulation.recorder.createSimulationRecord(type,ExistingVariables.resourceTotalIdleTimePercentage,1);
+    
+        }
     }
 
     addResourceStateListeners(resource:Resource){
@@ -408,7 +412,11 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
     }
 
     addEntityStats(type : string){ 
-         this.statistics.entityStats.set(type,new EntityStats(type));
+        if(!this.statistics.entityStats.has(type)){
+            this.statistics.entityStats.set(type,new EntityStats(type));
+            this.simulation.recorder.createSimulationRecord(type,ExistingVariables.entityTotalValueAddedTimePercentage,1);
+
+        }
      
     }
 

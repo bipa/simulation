@@ -20,7 +20,7 @@
     </button>
   
   <div style="padding-top: 5px">
-        <span *ngIf="simState!=0">Tid: {{this.simTime}} {{this.baseUnit}}</span>     
+        <span *ngIf="simState!=0">Tid: {{this.simTime / this.baseScale}} {{this.baseUnit}}</span>     
         <span *ngIf="simState==1"> pauset</span>
         <span *ngIf="simState==4"> stoppet</span>
 

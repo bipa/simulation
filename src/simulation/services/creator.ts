@@ -6,7 +6,7 @@ import {Route} from '../model/route';
 import {Station} from '../model/station';
 import {Process} from '../tasks/process';
 import {ISimulation} from '../model/iSimulation';
-import {SimulationRecord} from '../simulation';
+import {SimulationRecord,ExistingVariables} from '../simulation';
 import {SimEvent,ISimEventResult} from '../simEvent';
 
 
@@ -18,7 +18,7 @@ import {SimEvent,ISimEventResult} from '../simEvent';
 
 
 
-
+ 
 
 
 
@@ -186,7 +186,7 @@ export class Creator{
         creator.simulation.recorder.recordEntityCreate(entityInstance);
         entityInstance.timeCreated = creator.simulation.simTime;
         entityInstance.lastStateChangedTime = creator.simulation.simTime;
-
+      
       return entityInstance;
   }
 
@@ -203,7 +203,7 @@ export class Creator{
      resource.timeCreated = creator.simulation.simTime;
      resource.lastStateChangedTime = creator.simulation.simTime;
      resource.lastScheduledStateChangedTime = creator.simulation.simTime;
-     return resource;
+    return resource;
   }
 
 

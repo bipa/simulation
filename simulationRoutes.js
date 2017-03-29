@@ -189,7 +189,7 @@ validate(model){
 
  createCodeText(model){
     return `import {Simulation,ExistingVariables} from './simulation/simulation'
-import {Distributions} from './simulation/stats/distributions'
+import {Distributions,Units} from './simulation/stats/distributions'
 import {Route} from './simulation/model/route'
 import {Station} from './simulation/model/station'
 import {Entity} from './simulation/model/entity'
@@ -219,12 +219,12 @@ constructor(){
 
     this.model = {
         data:this.data,
-        variables:this.variables,
+        variables:variables,
+        stations:this.data.rooms,
+        routes:this.data.routes,
         entities:this.getEntities(),
-        preferences:this.getPreferences(),
-        stations:this.getFromData(this.data.stations),
-        routes:this.getFromData(this.data.routes),
-        charts:this.getCharts()
+        charts:this.getCharts(),
+        preferences:this.getPreferences()
     
 
     };

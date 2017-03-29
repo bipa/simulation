@@ -93,7 +93,9 @@ preferences:any;
     this.entities = [];
     this.resources = [];
     model.preferences.simTime =  (model.preferences.simTime || 1000)*model.preferences.baseScale;
+    
     this.endTime =model.preferences.simTime;
+    
     this.processes = new Map<string,Process>();
     this.queues = new Map<string,AbstractQueue<IEntity>>();
    
@@ -125,7 +127,7 @@ preferences:any;
     this.creator.createVariables(model.variables,this);
     //this.creator.createProcesses(model.processes);
     this.creator.createEntities(model.entities);
-
+   
 
     
     this.resourceBroker = new ResourceBroker(this);
@@ -201,6 +203,8 @@ simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<any> {
             simRes.simulationRecords = this.simulationRecords;
             //simRes.statistics = this.recorder.statistics.report();
             rtScenario.runtimeModel.simulationRecords = this.simulationRecords;
+            delete rtScenario.runtimeModel.data;
+            //delete rtScenario.runtimeModel.data.routes;
             rtScenario.runtimeModel.logRecords = this.logRecords;
             result.scenario = rtScenario;
              resolve(result);
@@ -263,6 +267,8 @@ addRandomValue(dist:Distribution){
     
     if(dist===null) return dist;
     
+   
+
     //if dist is just a number, following the default scale
    // if(!(dist instanceof Object) && !(parseInt(dist).isNaN())) return dist;
     let scale = this.setTimeScale(dist.unit  || this.preferences.baseUnit);

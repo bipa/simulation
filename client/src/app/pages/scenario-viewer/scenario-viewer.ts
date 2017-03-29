@@ -86,6 +86,49 @@ ngOnInit(){
      
     }
 
+
+
+simulate(){
+  this.scenarioes.forEach(s=>{
+    
+    
+    this.updateNextVariable(s);
+    this.updateNextLog(s);
+    
+  });
+
+  this.updateCharts();
+
+
+  if(this.simTime<=this.totalSimTime)
+  {
+        setTimeout(()=>{
+
+        //update simtime increases by 1 unit time
+        this.simTime+=this.speed;
+        
+
+      if(this.simState==2)
+      {
+          this.simulate();
+      }
+        
+
+
+      },this.delay)
+
+  }
+  else{
+    //done
+    this.simState =3;
+  }
+
+  
+
+
+}
+
+
 setPreferences(){
 
 
@@ -95,21 +138,28 @@ setPreferences(){
   this.totalSimTime = this.selectedScenario.runtimeModel.preferences.simTime;
   
 
+   this.speed  = this.baseScale;
          
           switch (this.selectedScenario.runtimeModel.preferences.baseUnit) {
             case 1:
               this.baseUnit = "seconds";
+              break;
             case 0:
               this.baseUnit = "minutes";
+              break;
             case 2:
               this.baseUnit = "hours";
+              break;
             case 3:
               this.baseUnit = "days";
+              break;
             case 4:
               this.baseUnit = "weeks";
+              break;
           
             default:
               this.baseUnit = "minutes";
+              break;
           }
  
 
@@ -238,7 +288,7 @@ updateNextRecord(scenario: Scenario){
 
 updateNextLog(scenario : Scenario){
   
-        if(scenario.runtimeModel.nextLogRecord && this.simTime>=scenario.runtimeModel.nextLogRecord.simTime){       
+        while(scenario.runtimeModel.nextLogRecord && this.simTime>=scenario.runtimeModel.nextLogRecord.simTime){       
           scenario.runtimeModel.logs.push(scenario.runtimeModel.nextLogRecord)
           this.updateNextLogRecord(scenario);
         }
@@ -288,45 +338,6 @@ updateCharts(){
 }
 
 
-simulate(){
-  this.scenarioes.forEach(s=>{
-    
-    
-    this.updateNextVariable(s);
-    this.updateNextLog(s);
-    
-  });
-
-  this.updateCharts();
-
-
-  if(this.simTime<=this.totalSimTime)
-  {
-        setTimeout(()=>{
-
-        //update simtime increases by 1 unit time
-        this.simTime+=this.speed;
-        
-
-      if(this.simState==2)
-      {
-          this.simulate();
-      }
-        
-
-
-      },this.delay)
-
-  }
-  else{
-    //done
-    this.simState =3;
-  }
-
-  
-
-
-}
 
 
 
