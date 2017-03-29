@@ -28,7 +28,7 @@ reportRecord(heading:string =null ,statRecord: DataRecord=null ){
     if(statRecord)
     {
 
-        let s = `${heading}      ${statRecord.average.toFixed(4)}       ${statRecord.max.toFixed(2)}        ${statRecord.min.toFixed(2)}        ${statRecord.deviation.toFixed(2)}      ${statRecord.sum.toFixed(2)}`
+        let s = `${heading}      ${statRecord.count.toFixed(0)}      ${statRecord.average.toFixed(2)}       ${statRecord.max.toFixed(2)}        ${statRecord.min.toFixed(2)}        ${statRecord.deviation.toFixed(2)}      ${statRecord.sum.toFixed(2)}`
         
         this.reporter(s);
     }else{
@@ -40,7 +40,7 @@ reportRecord(heading:string =null ,statRecord: DataRecord=null ){
 
 report(){
 
-    this.reporter(`ENTITETER                    average      Max         Min       St.avvik         Sum`)
+    this.reporter(`ENTITETER                    count       average      Max         Min       St.avvik         Sum`)
     this.reporter();
     this.reportEntities();
     this.reporter();
@@ -73,8 +73,10 @@ reportEntities(){
     this.simulation.recorder.statistics.entityStats.forEach((entityStats,type)=>{
             this.reporter(type)
             this.reporter();
-           /* this.reportRecord("Antall WIP:              ",entityStats.countStats.sizeSeries.report());
-            this.reportRecord("Varighet:                ",entityStats.countStats.durationSeries.report());*/
+            this.reportRecord("Antall WIP:               ",entityStats.countStats.report());
+            this.reportRecord("Syklustid:                ",entityStats.totalTime.report());
+            
+            this.reporter();
             this.reportRecord(`Total tid:    ${entityStats.totTime.toFixed(2)}`);
             this.reporter();
             /*this.reportRecord( `    VA Tid:    ${entityStats.totalValueAddedTime.toFixed(2)}   ${(entityStats.totalValueAddedTime/entityStats.totTime).toFixed(2)}`,entityStats.valueAddedTime.report());

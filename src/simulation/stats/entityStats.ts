@@ -18,16 +18,17 @@ export class EntityStats{
     totalTransferTime:number=0;
     totalOtherTime:number=0;
 
+    count:number=0;
 
     totTime:number=0;
 
     //count stats
-    countStats:Population;
+    countStats:DataSeries;
 
     constructor(type :string){
         this.type = type;
 
-        this.countStats = new Population();
+        this.countStats = new DataSeries();
         this.totalTime = new DataSeries();
         this.transferTime = new DataSeries();
         this.valueAddedTime = new DataSeries();

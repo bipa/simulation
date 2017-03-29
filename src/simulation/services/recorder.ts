@@ -382,14 +382,19 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 
     recordEntityDispose(entity:Entity){
         
-        this.entityStats(entity).countStats.leave(entity.timeCreated,this.simulation.simTime);
-        this.entityStats(entity).totalTime.record(entity.timeDisposed  - entity.timeCreated);
+        let entStat = this.entityStats(entity);
+
+        entStat.countStats.record(entStat.count,entity.timeDisposed  - entity.timeCreated);
+        entStat.totalTime.record(entity.timeDisposed  - entity.timeCreated);
+        this.recordEntityStat(entity);
         this.recordEntityStats(entity);
+        this.entityStats(entity).count--;
                 
     }
 
     recordEntityCreate(entity:Entity){
-        this.entityStats(entity).countStats.enter(this.simulation.simTime);
+        
+        this.entityStats(entity).count++;
     }
 
   
@@ -402,7 +407,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         this.entityStats(entity).otherTime.record(entity.otherTime);
     }
 
-    addEntityStats(type : string){
+    addEntityStats(type : string){ 
          this.statistics.entityStats.set(type,new EntityStats(type));
      
     }

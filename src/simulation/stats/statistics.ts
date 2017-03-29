@@ -29,8 +29,8 @@ export class Statistics {
             let entRec = new EntityRecord();
             entRec.type = type;
             let pop= entityStat.countStats.report();
-            entRec.count = pop.sizeRecord;
-            entRec.duration = pop.durationRecord;
+            entRec.count = entityStat.countStats.report();
+            entRec.duration = entityStat.totalTime.report();
             entRec.valueAddedTime = entityStat.valueAddedTime.report();
             entRec.nonValueAddedTime = entityStat.nonValueAddedTime.report();
             entRec.transferTime = entityStat.transferTime.report();
