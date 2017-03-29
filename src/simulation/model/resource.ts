@@ -20,7 +20,7 @@ export class Resource extends Base{
     brokenTime:number=0;
     transferTime:number=0;
     waitTime:number=0;
-
+    inActiveTime:number=0;
 
 
 

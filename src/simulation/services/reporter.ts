@@ -77,18 +77,18 @@ reportEntities(){
             this.reportRecord("Varighet:                ",entityStats.countStats.durationSeries.report());*/
             this.reportRecord(`Total tid:    ${entityStats.totTime.toFixed(2)}`);
             this.reporter();
-            /*this.reportRecord( `    VA Tid:    ${entityStats.totalValueAddedTime.toFixed(2)}   ${(entityStats.totalValueAddedTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.valueAddedTime.report());
-            this.reportRecord( `  NVA time:    ${entityStats.totalNonValueAddedTime.toFixed(2)}   ${(entityStats.totalNonValueAddedTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.nonValueAddedTime.report());
-            this.reportRecord( `  Transfer:    ${entityStats.totalTransferTime.toFixed(2)}   ${(entityStats.totalTransferTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.transferTime.report());
-            this.reportRecord( `  Ventetid:    ${entityStats.totalWaitTime.toFixed(2)}   ${(entityStats.totalWaitTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.waitTime.report());
-            this.reportRecord( `     Annet:    ${entityStats.totalOtherTime.toFixed(2)}   ${(entityStats.totalOtherTime/entityStats.totalTime.sum).toFixed(2)}`,entityStats.otherTime.report());
+            /*this.reportRecord( `    VA Tid:    ${entityStats.totalValueAddedTime.toFixed(2)}   ${(entityStats.totalValueAddedTime/entityStats.totTime).toFixed(2)}`,entityStats.valueAddedTime.report());
+            this.reportRecord( `  NVA time:    ${entityStats.totalNonValueAddedTime.toFixed(2)}   ${(entityStats.totalNonValueAddedTime/entityStats.totTime).toFixed(2)}`,entityStats.nonValueAddedTime.report());
+            this.reportRecord( `  Transfer:    ${entityStats.totalTransferTime.toFixed(2)}   ${(entityStats.totalTransferTime/entityStats.totTime).toFixed(2)}`,entityStats.transferTime.report());
+            this.reportRecord( `  Ventetid:    ${entityStats.totalWaitTime.toFixed(2)}   ${(entityStats.totalWaitTime/entityStats.totTime).toFixed(2)}`,entityStats.waitTime.report());
+            this.reportRecord( `     Annet:    ${entityStats.totalOtherTime.toFixed(2)}   ${(entityStats.totalOtherTime/entityStats.totTime).toFixed(2)}`,entityStats.otherTime.report());
             this.reporter();*/
             
-            this.reportRecord( `    VA Tid:    ${entityStats.totalValueAddedTime.toFixed(2)}   ${(entityStats.totalValueAddedTime/entityStats.totalTime.sum).toFixed(2)}`);
-            this.reportRecord( `  NVA time:    ${entityStats.totalNonValueAddedTime.toFixed(2)}      ${(entityStats.totalNonValueAddedTime/entityStats.totalTime.sum).toFixed(2)}`);
-            this.reportRecord( `  Transfer:    ${entityStats.totalTransferTime.toFixed(2)}     ${(entityStats.totalTransferTime/entityStats.totalTime.sum).toFixed(2)}`);
-            this.reportRecord( `  Ventetid:    ${entityStats.totalWaitTime.toFixed(2)}      ${(entityStats.totalWaitTime/entityStats.totalTime.sum).toFixed(2)}`);
-            this.reportRecord( `     Annet:    ${entityStats.totalOtherTime.toFixed(2)}      ${(entityStats.totalOtherTime/entityStats.totalTime.sum).toFixed(2)}`);
+            this.reportRecord( `    VA Tid:    ${entityStats.totalValueAddedTime.toFixed(2)}   ${(entityStats.totalValueAddedTime/entityStats.totTime).toFixed(2)}`);
+            this.reportRecord( `  NVA time:    ${entityStats.totalNonValueAddedTime.toFixed(2)}      ${(entityStats.totalNonValueAddedTime/entityStats.totTime).toFixed(2)}`);
+            this.reportRecord( `  Transfer:    ${entityStats.totalTransferTime.toFixed(2)}     ${(entityStats.totalTransferTime/entityStats.totTime).toFixed(2)}`);
+            this.reportRecord( `  Ventetid:    ${entityStats.totalWaitTime.toFixed(2)}      ${(entityStats.totalWaitTime/entityStats.totTime).toFixed(2)}`);
+            this.reportRecord( `     Annet:    ${entityStats.totalOtherTime.toFixed(2)}      ${(entityStats.totalOtherTime/entityStats.totTime).toFixed(2)}`);
             this.reporter();
 
     });
@@ -109,14 +109,15 @@ reportResources(){
             this.reportRecord("Effektiv:      ",resourceStats.instantaneousUtilization.report());
             this.reporter(`       Ideell:                  ${resourceStats.scheduledUtilization.toFixed(4)}`);*/
             this.reporter();
-            this.reporter(`     Total tid:        ${resourceStats.simTime.toFixed(0)}`);
-            this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.simTime).toFixed(2)}`);
-            this.reporter(`         Busy:         ${(resourceStats.totalBusyTime/resourceStats.simTime).toFixed(2)}`);
-            this.reporter(`         Wait:         ${(resourceStats.totalWaitTime/resourceStats.simTime).toFixed(2)}`);
-            this.reporter(`         Transfer:     ${(resourceStats.totalTransferTime/resourceStats.simTime).toFixed(2)}`);
-            this.reporter(`         Broken:       ${(resourceStats.totalBrokenTime/resourceStats.simTime).toFixed(2)}`);
-            this.reporter(`         Other:        ${(resourceStats.totalOtherTime/resourceStats.simTime).toFixed(2)}`);
-            this.reporter(`         Unscheduled:  ${(resourceStats.totalUnScheduledTime/resourceStats.simTime).toFixed(2)}`);
+            this.reporter(`     Total tid:        ${resourceStats.totalScheduledTime.toFixed(0)}`);
+            this.reporter(`         Idle:         ${(resourceStats.totalIdleTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Busy:         ${(resourceStats.totalBusyTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`     inactive:         ${(resourceStats.totalinActiveTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Wait:         ${(resourceStats.totalWaitTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Transfer:     ${(resourceStats.totalTransferTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Broken:       ${(resourceStats.totalBrokenTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Other:        ${(resourceStats.totalOtherTime/resourceStats.totalScheduledTime).toFixed(2)}`);
+            this.reporter(`         Unscheduled:  ${(resourceStats.totalUnScheduledTime/resourceStats.totalScheduledTime).toFixed(2)}`);
             this.reporter();
 
     });

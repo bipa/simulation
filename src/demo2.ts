@@ -174,7 +174,7 @@ constructor(){
                             }
                             else{
                                        yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
-                                       worker.setState();
+                                       worker.setState(ResourceStates.idle);
                             }
 
                     }

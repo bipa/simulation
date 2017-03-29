@@ -488,12 +488,14 @@ export class Variable{
         resourceTotalTransferTime,
         resourceTotalWaitTime,
         resourceTotalOtherTime,
+        resourceTotalInActiveTime,
 
         resourceTotalIdleTimePercentage,
         resourceTotalBusyTimePercentage,
         resourceTotalTransferTimePercentage,
         resourceTotalWaitTimePercentage,
         resourceTotalOtherTimePercentage,
+        resourceTotalInActiveTimePercentage
  }
 
 

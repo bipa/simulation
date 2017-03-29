@@ -166,9 +166,9 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                     if(resource.scheduledState===ScheduledStates.scheduled)
                     {
                         
-                        resStat.totalScheduledTime += this.simulation.simTime-resStat.lastScheduledTime;
+                        resStat.totalScheduledTime += this.simulation.simTime-resource.lastStateChangedTime;
                     }else{
-                        resStat.totalUnScheduledTime += this.simulation.simTime-resStat.lastScheduledTime;
+                        resStat.totalUnScheduledTime += this.simulation.simTime-resource.lastStateChangedTime;
               
                     }
                     let totalCurrentScheduledTime = resStat.totalScheduledTime;
@@ -232,6 +232,14 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                     resStat.totalOtherTime+=duration; 
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalOtherTime,resStat.totalOtherTime);
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalOtherTimePercentage,resStat.totalOtherTime/totalCurrentScheduledTime);
+                   
+                    break;
+                case ResourceStates.inActive:
+                    //The resource IS NOT IDLE ANYMORE
+                    resource.inActiveTime+=duration;
+                    resStat.totalinActiveTime+=duration; 
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalInActiveTime,resStat.totalinActiveTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalInActiveTimePercentage,resStat.totalinActiveTime/totalCurrentScheduledTime);
                    
                     break;
             
@@ -301,7 +309,6 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 
             this.recordEntityStat(entity,)
             
-            entity.lastStateChangedTime  = this.simulation.simTime;
 
 
  
@@ -350,6 +357,9 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
             default:
                 break;
         }
+
+        
+            entity.lastStateChangedTime  = this.simulation.simTime;
     }
 
 
@@ -360,6 +370,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
             if (entity.finalize) {
             entity.finalize();
         }
+            this.recordEntityStat(entity);
         let entityModel = this.simulation.entityModels.get(entity.type);
         if(entityModel.recordWip){
             this.recordEntityStats(entity);

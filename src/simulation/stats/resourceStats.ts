@@ -18,6 +18,7 @@ export class ResourceStats extends EntityStats{
     totalIdleTime: number =0;
     totalBrokenTime : number =0 ;
     totalOtherTime : number = 0;
+    totalinActiveTime: number=0;
     simTime:number;
 
 
