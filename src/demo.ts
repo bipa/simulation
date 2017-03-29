@@ -94,12 +94,13 @@ constructor(){
                      yield  ctx.tasks.enqueue(part,ctx.queue("nursesQueue"));
 
  let seizeResult   = yield  ctx.tasks.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
+                            ctx.runtime.worker1.setState(ResourceStates.wait);
                    
                      yield *ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
 
                      yield *ctx.tasks.walkTo(part,seizeResult.resource.currentStation);
                     
-                     yield *ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                     yield  ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 
                      yield  ctx.tasks.release(part,seizeResult.resource);
                     
@@ -122,7 +123,7 @@ constructor(){
             
         }
 
-
+ 
     ];
 }
 

@@ -65,7 +65,11 @@ export class Tasker{
             if(entity instanceof Resource)
             {
                    let resource =  entity as Resource;
-                   resource.transfer();
+                   resource.setState(ResourceStates.transfer);
+            }else
+            {
+                   let e =  entity as Entity;
+                   e.setState(EntityStates.transfer);
             }
 
             this.simulation.currentSimEvent.scheduledAt = this.simulation.simTime;
@@ -88,13 +92,13 @@ export class Tasker{
             if(entity instanceof Resource)
             {
                     let resource =  entity as Resource;
-                    resource.activateNextState();
+                    resource.setState();
             }
-            else
+            else 
             {
-                    this.simulation.recorder.recordEntityStat(entity as Entity,timeStampBefore,EntityStates.transfer);
+                  //  this.simulation.recorder.recordEntityStat(entity as Entity,timeStampBefore,EntityStates.transfer);
             }
-           
+            
 
     }
  
@@ -195,7 +199,7 @@ export class Tasker{
         }
    inner_seize(entity: Entity, resource: Resource, 
                            ) :SeizeResult {
-                resource.seize(entity);
+                entity.seizeResource(resource);
                 return new SeizeResult(entity, resource);
     }
 
@@ -322,17 +326,7 @@ export class Tasker{
 
 
 
-
-
-    seizeResource(entity:Entity,resource:Resource) : Promise<SeizeResult>{
-
-        //Creates a new wueue each time
-            return Seize.seize(this.simulation,entity,[resource],1);
-
-
-    }
-
-    release(entity:Entity,resource:Resource) {
+    release(entity:Entity,resource:Resource,resourceState : ResourceStates = ResourceStates.idle, entityState:EntityStates = EntityStates.nonValueAdded) {
           
 
             this.simulation.currentSimEvent.type ="release";
@@ -340,15 +334,15 @@ export class Tasker{
             this.simulation.currentSimEvent.currentResult = new ReleaseResult(entity,resource);
             this.simulation.cleanSimEvent();
             this.simulation.currentSimEvent.resources.push(resource)    
-            this.simulation.currentSimEvent.entities.push(entity)        
-            //yield;
-            resource.activateNextState();
+            this.simulation.currentSimEvent.entities.push(entity)  
+            resource.setState(resourceState);
+            entity.setState(entityState)
 
     }
 
 
 
-    *delay(entity: Entity, resource: Resource, processTimeDist: Distribution,allocation:EntityStates = EntityStates.valueAdded){
+    delay(entity: Entity, resource: Resource, processTimeDist: Distribution,resourceState : ResourceStates = ResourceStates.busy, entityState:EntityStates = EntityStates.valueAdded){
             let processTime = this.simulation.addRandomValue(processTimeDist);
             let timeStampBefore = this.simulation.simTime;
             this.simulation.currentSimEvent.scheduledAt = this.simulation.simTime;
@@ -358,10 +352,9 @@ export class Tasker{
             this.simulation.cleanSimEvent();
             this.simulation.currentSimEvent.resources.push(resource)    
             this.simulation.currentSimEvent.entities.push(entity)        
-            resource.process(entity);
-            yield;
-            //SHOULD USE SAME PATTERN AS FOR RESOURCES       
-            this.simulation.recorder.recordEntityStat(entity,timeStampBefore,allocation);
+            resource.setState(resourceState)
+            entity.setState(entityState)
+            
     }
 
 
@@ -374,23 +367,19 @@ delayResource( resource: Resource, processTimeDist: Distribution,nextResourceSta
             this.simulation.currentSimEvent.message = `  ${resource.name} delay is done`;
             this.simulation.cleanSimEvent();
             this.simulation.currentSimEvent.resources.push(resource)     
-            resource.activateNextState(nextResourceState);
+            resource.setState(nextResourceState);
           
     }
 
+ 
 
 
 
 
-
-    enqueue(entity: Entity,queue :AbstractQueue<IEntity>) {
+    enqueue(entity: Entity,queue :AbstractQueue<IBase>, entityState : EntityStates = EntityStates.wait) {
        
-      /*  let simEvent = new SimEvent<EnqueueResult>(this.simulation.simTime,this.simulation.simTime,"front",`  ${entity.name} is now in front of ${queue.name}`);
-            
-            simEvent.result = new EnqueueResult(entity);
-*/
 
-
+            entity.setState(entityState)
             queue.enqueue(entity);
             if (queue.length == 1) {  
                 
@@ -432,7 +421,7 @@ delayResource( resource: Resource, processTimeDist: Distribution,nextResourceSta
             this.simulation.currentSimEvent.entities.push(entity)    
             yield;
             queue.dequeue();
-            this.simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,EntityStates.wait);
+            //this.simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,EntityStates.wait);
 
            
           
@@ -492,7 +481,7 @@ delayResource( resource: Resource, processTimeDist: Distribution,nextResourceSta
             let res = from[counter];
            t.runtime[property] = res;
            if(res instanceof Resource)
-                (res as Resource).seize(t);
+           t.seizeResource(res as Resource);
             counter++
         })
 

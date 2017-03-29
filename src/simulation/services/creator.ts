@@ -182,8 +182,10 @@ export class Creator{
 
         creator.addEvents(entityModel,entityInstance,creator);
 
+        creator.simulation.recorder.addEntityStateListeners(entityInstance);
         creator.simulation.recorder.recordEntityCreate(entityInstance);
-        entityInstance.timeEntered = creator.simulation.simTime;
+        entityInstance.timeCreated = creator.simulation.simTime;
+        entityInstance.lastStateChangedTime = creator.simulation.simTime;
 
       return entityInstance;
   }
@@ -198,7 +200,9 @@ export class Creator{
      creator.simulation.resources.push(resource);
      creator.simulation.resourceBroker.registerResource(resource);
      creator.simulation.recorder.addResourceStateListeners(resource);
-
+     resource.timeCreated = creator.simulation.simTime;
+     resource.lastStateChangedTime = creator.simulation.simTime;
+     resource.lastScheduledStateChangedTime = creator.simulation.simTime;
      return resource;
   }
 

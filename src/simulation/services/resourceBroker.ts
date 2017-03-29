@@ -143,20 +143,20 @@ seizeResource(request : ResourceRequest,resource:Resource){
 
     if(request.quantity>1){
             request.seizeResult.resources.push(resource);
-            resource.seize(request.entity);
+            request.entity.seizeResource(resource);
             if(request.seizeResult.resources.length===request.quantity){
                 
                 request.isDone = true;
             }
     }else{
         request.seizeResult.resource = resource;
-        resource.seize(request.entity);
+        request.entity.seizeResource(resource);
         request.isDone = true;
     }
         
 }
 
-
+ 
 
 
 addRequest(simEvent:ISimEvent,entity: Entity,resources:Resource[],quantity:number,priority:number=0) {

@@ -5,59 +5,89 @@ import {IEntity} from './iEntity'
 import {Base} from './base'
 
 
-export class Entity extends Base implements IEntity{
+export class Entity extends Base{
 
-    static counter:Map<string,any>=new Map<string,any>();
 
     finalize:Function;
-    type:string;
 
-    timeEntered:number =0;
-    timeLeft:number =0;
-    duration:number =0;
+
     transferTime:number=0;
     valueAddedTime:number =0;
     nonValueAddedTime:number =0;
     waitTime:number = 0;
     otherTime:number = 0;
-    lastEnqueuedAt:number =0;
 
 
-
+    seizedResources:Resource[];
     runtime :any = {};
 
-    currentStation:Station;
-
-    name:string;
-    emitter:any;
-    speed:number;
-
+    state:EntityStates;
 
     constructor(entityModel:any){
         super(entityModel);
-        this.speed = entityModel.speed;
-        if(!Entity.counter.has(this.type)) Entity.counter.set(this.type,{value:1});
-        this.name = entityModel.name || entityModel.type+Entity.counter.get(this.type).value;
+        this.seizedResources = [];
+        this.state = EntityStates.valueAdded;
+    }
+
+
+    
+    seizeResource(resource:Resource){
+        this.seizedResources.push(resource);
+        resource.seize(this);
+    }
+
+    releaseResource(resource:Resource){
+        let index = this.seizedResources.indexOf(resource);
+        this.seizedResources.splice(index,1);
+        resource.unSeize(this);
+    }
+
+
+    private changeState(nextNextState : EntityStates){
         
-            Entity.counter.get(this.type).value++;
+        if(this.state === nextNextState ) return;
+        this.emitter.emit("onBeforeEntityStateChanged", this);
+        this.state = nextNextState;
+        this.emitter.emit("onAfterEntityStateChanged", this);
     }
 
 
-    dispose(time:number){
-        this.timeLeft= time;
-        this.duration = this.timeLeft-this.timeEntered;
-    }
+
+    setState(nextNextState : EntityStates =EntityStates.valueAdded){
+        
+        
+        this.changeState(nextNextState);
+
+        switch (nextNextState) {
+            case EntityStates.nonValueAdded:
+                this.emitter.emit("NVA", this);
+                break;
+            case EntityStates.valueAdded:
+                this.emitter.emit("VA", this);
+                break;
+            case EntityStates.transfer:
+                this.emitter.emit("transfer", this);
+                break;
+            case EntityStates.other:
+                this.emitter.emit("other", this);
+                break;
+            case EntityStates.wait:
+                this.emitter.emit("wait", this);
+                break;
+        
+            default:
+                break;
+        }
 
 
-    enqueue(timestamp:number){
-        this.lastEnqueuedAt = timestamp;
-    }
 
 
-    dequeue(timestamp:number){
-        //this.waitTime+=timestamp-this.lastEnqueuedAt;
+
         
     }
+
+
+ 
     
 }
 

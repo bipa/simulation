@@ -479,7 +479,7 @@ export class Variable{
         entityTotalNonValueAddedTimePercentage,
         entityTotalWaitTimePercentage,
         entityTotalTransferTimePercentage,
-        entityTotaOtherTimePercentage,
+        entityTotalOtherTimePercentage,
 
         resourceTotalInstantaneousUtilization,
 
@@ -487,11 +487,13 @@ export class Variable{
         resourceTotalBusyTime,
         resourceTotalTransferTime,
         resourceTotalWaitTime,
+        resourceTotalOtherTime,
 
         resourceTotalIdleTimePercentage,
         resourceTotalBusyTimePercentage,
         resourceTotalTransferTimePercentage,
         resourceTotalWaitTimePercentage,
+        resourceTotalOtherTimePercentage,
  }
 
 
@@ -503,7 +505,7 @@ export class SimulationResult{
 
 
 
-
+ 
 
 export class LogRecord{
 

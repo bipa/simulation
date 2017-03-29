@@ -34,18 +34,18 @@ export class Walk{
             if(entity instanceof Resource)
             {
                    let resource =  entity as Resource;
-                   resource.transfer();
+                   resource.setState(ResourceStates.transfer);
             }
             let simEvent = simulation.setTimer(time,"Walk", `${entity.name} is walking from ${from.name} to ${to.name}`);
             simulation.eventEmitter.once(simEvent.name,sEvent=>{
                 if(entity instanceof Resource)
                 {
                        let resource =  entity as Resource;
-                       resource.activateNextState();
+                       resource.setState();
                 }
                 else
                 {
-                        simulation.recorder.recordEntityStat(entity as Entity,timeStampBefore,EntityStates.transfer);
+                      //  simulation.recorder.recordEntityStat(entity as Entity,timeStampBefore,EntityStates.transfer);
                  }
            });
 

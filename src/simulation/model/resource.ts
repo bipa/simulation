@@ -7,19 +7,20 @@ import {Base} from './base'
 export class Resource extends Base{
 
 
-    processTime : Distribution;
-    state : ResourceStates;
-    //nextState : ResourceStates = ResourceStates.idle;
+    processTime : Distribution;    
+    state : ResourceStates;   
     scheduledState:ScheduledStates;
+
+    isSeized :boolean = false;
     seizedBy:Entity[];
+    
     idleTime:number=0;
     otherTime:number=0;
     busyTime:number=0;
     brokenTime:number=0;
     transferTime:number=0;
     waitTime:number=0;
-    lastStateChangedTime:number=0;
-    lastScheduledStateChangedTime :  number  = 0;
+
 
 
 
@@ -30,6 +31,24 @@ export class Resource extends Base{
             this.scheduledState = ScheduledStates.scheduled;
             this.seizedBy = [];
     }
+
+    seize(entity : Entity){
+        this.isSeized = true;
+        this.seizedBy.push(entity);
+        this.emitter.emit("seized", this);
+        this.setState(ResourceStates.busy);
+    }
+
+    unSeize(entity : Entity){
+        let index = this.seizedBy.indexOf(entity);
+        this.seizedBy.splice(index,1);
+        if(this.seizedBy.length===0){
+            
+            this.isSeized = true;
+            this.setState();
+        }
+    }
+
 
     unSchedule(){
         
@@ -48,134 +67,45 @@ export class Resource extends Base{
     }
 
 
-    transfer(){
 
-        if(this.state === ResourceStates.transfer) return;
-
+    private changeState(newState : ResourceStates){
+        
+        if(this.state === newState ) return;
         this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.transfer;
+        this.state = newState;
         this.emitter.emit("onAfterResourceStateChanged", this);
-
-        this.emitter.emit("transfer", this);
-    }
-
-    process(entity:Entity){
-
-        if(this.state === ResourceStates.busy) return;
-
-        this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.busy;
-        this.emitter.emit("onAfterResourceStateChanged", this);
-
-        this.emitter.emit("onResourceBusy", this);
-        this.emitter.emit("busy", entity);
-    }
-
-    unSeize(entity:Entity){
-        let index = this.seizedBy.indexOf(entity);
-        if(index>=0){
-            this.seizedBy.splice(index,1);
-        }
-    }
-
-    seize(entity : Entity){
- 
-        
-        if(this.state === ResourceStates.seized) return;
-
-        this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.seized;
-        this.seizedBy.push(entity);
-        this.emitter.emit("onAfterResourceStateChanged", this);
-       this.emitter.emit("seized", entity);
-    }
-
-    idle(){
-
-        if(this.state === ResourceStates.idle) return;
-
-        this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.idle;
-        this.emitter.emit("onAfterResourceStateChanged", this);
-        this.seizedBy.length = 0;
-        this.emitter.emit("idle", this);
     }
 
 
-
-    release(){
-
-        if(this.state === ResourceStates.idle) return;
-
-        this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.idle;
-        this.seizedBy.length = 0;
-        this.emitter.emit("released", this);
-    }
-
-    broken(){
+    setState(newState : ResourceStates = ResourceStates.idle){
         
         
-        if(this.state === ResourceStates.broken ) return;
+        this.changeState(newState);
 
-        this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.broken;
-        this.seizedBy.length = 0;
-        this.emitter.emit("onAfterResourceStateChanged", this);
-        this.emitter.emit("broken", this);
-    }
-
-    other(){
-        
-        
-        if(this.state === ResourceStates.other ) return;
-
-        this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.other;
-        this.seizedBy = null;
-        this.emitter.emit("onAfterResourceStateChanged", this);
-        this.emitter.emit("other", this);
-    }
-
-    inActive(){
-        
-        
-        if(this.state === ResourceStates.inActive ) return;
-
-        this.emitter.emit("onBeforeResourceStateChanged", this);
-        this.state = ResourceStates.inActive;
-        this.seizedBy = null;
-        this.emitter.emit("onAfterResourceStateChanged", this);
-        this.emitter.emit("inActive", this);
-    }
-
-    activateNextState(nextNextState : ResourceStates = ResourceStates.idle, entity:Entity = null){
-        
-        
-        switch (nextNextState) {
+        switch (newState) {
             case ResourceStates.idle:
-            this.idle();
+                this.emitter.emit("idle", this);
                 break;
             case ResourceStates.busy:
-                this.process(entity);
+                this.emitter.emit("busy", this);
                 break;
             case ResourceStates.broken:
-                this.broken();
+                this.emitter.emit("broken", this);
                 break;
             case ResourceStates.other:
-                this.other();
+                this.emitter.emit("other", this);
                 break;
-            case ResourceStates.seized:
-                this.seize(entity);
+            case ResourceStates.wait:
+                this.emitter.emit("wait", this);
                 break;
             case ResourceStates.transfer:
-                this.transfer();
+                this.emitter.emit("transfer", this);
                 break;
             case ResourceStates.released:
-                this.release();
+                this.emitter.emit("other", this);
                 break;
             case ResourceStates.inActive:
-                this.inActive();
+                this.emitter.emit("inActive", this);
                 break;
         
             default:
@@ -198,7 +128,7 @@ export enum ResourceStates{
 
         idle =0,
         transfer,
-        seized,
+        wait,
         released,
         busy,
         broken,

@@ -1,11 +1,11 @@
 import {Queue} from './queue';
 import {AbstractQueue} from './abstractQueue';
 import {ISimulation} from '../model/isimulation';
-import {IEntity} from '../model/iEntity';
+import {IBase} from '../model/iBase';
 import {} from './stats';
 
 
-export class FifoQueue<T extends IEntity> extends AbstractQueue<T>{
+export class FifoQueue<T extends IBase> extends AbstractQueue<T>{
 
 
 

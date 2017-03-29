@@ -30,7 +30,7 @@ export class Dequeue{
            simEvent.result = new DequeueResult(entity);   
            simulation.eventEmitter.once(simEvent.name, simEvent=>{
                 queue.dequeue();
-                simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,EntityStates.wait);
+                //simulation.recorder.recordEntityStat(entity,entity.lastEnqueuedAt,EntityStates.wait);
 
            })
           
@@ -43,7 +43,7 @@ export class Dequeue{
 
        }
        
-
+ 
 /*
        static dequeue(simulation:Simulation,entity: Entity,  queue: AbstractQueue<IEntity> ) 
        : Promise<DequeueResult>{

@@ -94,7 +94,7 @@ constructor(){
                     let process = ctx.process("processpatient");
 
 
-
+/*
                     let seizeResult   = await ctx.tasks.seizeResource(patient,ctx.runtime.worker1);
 
                     //The patient needs to walk to the office room
@@ -122,7 +122,7 @@ constructor(){
                         
                         await ctx.tasks.dispose(patient);
                     }
-
+*/
                     
                   
 

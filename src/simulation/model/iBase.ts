@@ -9,4 +9,8 @@ export interface IBase{
     emitter:any;
     speed: number;
     currentStation:Station;
+    timeCreated:number;
+    timeDisposed:number;
+    lastStateChangedTime:number;
+    lastScheduledStateChangedTime :  number ;
 }

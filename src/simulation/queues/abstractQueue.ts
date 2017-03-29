@@ -1,7 +1,7 @@
 import {Queue} from './queue';
 import {ISimulation} from '../model/isimulation';
 import {Population,PopulationRecord} from '../stats/dataRecorder';
-import {IEntity} from '../model/iEntity';
+import {IBase} from '../model/iBase';
 import {Entity} from '../model/entity';
 
 
@@ -9,7 +9,7 @@ let EventEmitter = require('events');
 
 
 
-export class AbstractQueue<T extends IEntity>{
+export class AbstractQueue<T extends IBase>{
 
     static count : number = 0;
 
@@ -41,7 +41,6 @@ export class AbstractQueue<T extends IEntity>{
         this.stats.enter(timeStamp);
         this.countEntered++;
         this.current++;
-        item.enqueue(timeStamp);
         this.simulation.log(`${item.name} enqueued`, "enqueue")
 
         this.eventEmitter.emit("enqueued",item)
@@ -57,7 +56,6 @@ export class AbstractQueue<T extends IEntity>{
         this.eventEmitter.emit("dequeued",item)
         this.countLeft++;
         this.current--;
-        item.dequeue(simTime);
         //Check if there is more items in the queue, and notice if so, by the name of the enitity
         if (this.length > 0) {
             let nextItem = this.peek();

@@ -77,7 +77,7 @@ export class Seize{
         }
    static  inner_seize(simulation: ISimulation,entity: Entity, resource: Resource, 
                             simEvent: SimEvent<SeizeResult> ) :SeizeResult {
-                resource.seize(entity);
+                entity.seizeResource(resource);
                 simEvent.result = new SeizeResult(entity, resource);
                 simEvent.message = `  ${entity.name} seized ${resource.name}`;
                 simulation.scheduleEvent2(simEvent);

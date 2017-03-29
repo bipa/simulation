@@ -94,12 +94,11 @@ constructor(){
                      yield  ctx.tasks.enqueue(part,ctx.queue("nursesQueue"));
 
  let seizeResult   = yield  ctx.tasks.seizeOneFromManyResources(part,[ctx.runtime.worker1]);
-                   
+                            ctx.runtime.worker1.setState(ResourceStates.wait);
                      yield *ctx.tasks.dequeue(part,ctx.queue("nursesQueue"));
 
                      yield *ctx.tasks.walkTo(part,seizeResult.resource.currentStation);
-                    
-                     yield *ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
+                     yield  ctx.tasks.delay(part,seizeResult.resource,ctx.data.machineProcessTime);                
                 
                      yield  ctx.tasks.release(part,seizeResult.resource);
                     
@@ -138,7 +137,7 @@ constructor(){
                                     yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
                                     //the resource becomes idle
                                     //worker.nextState = ResourceStates.idle;
-                                    worker.activateNextState(ResourceStates.idle);
+                                    worker.setState(ResourceStates.idle);
                                })
                             }
 
@@ -168,14 +167,14 @@ constructor(){
                                     //the resource becomes idle
                                     //worker.nextState = ResourceStates.idle;
                                     //Continue with the task that was interrupted
-                                    worker.activateNextState(ResourceStates.busy);
+                                    worker.setState(ResourceStates.busy);
                                     simEvent.deliverAt = ctx.simTime+workLeft;
                                     //Continue with the task
                                     ctx.simulator.scheduleEvent(simEvent);
                             }
                             else{
                                        yield ctx.tasks.delayResource(worker,ctx.data.workerLunchDuration)
-                                       worker.activateNextState();
+                                       worker.setState();
                             }
 
                     }

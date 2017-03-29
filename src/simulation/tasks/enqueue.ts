@@ -25,7 +25,8 @@ export class Enqueue{
             let simEvent = new SimEvent<EnqueueResult>(simulation.simTime,simulation.simTime,"front",`  ${entity.name} is now in front of ${queue.name}`);
             
             simEvent.result = new EnqueueResult(entity);
-            queue.enqueue(entity);
+           
+           
             if (queue.length == 1) {  
                 simulation.scheduleEvent2(simEvent);
             }
@@ -47,7 +48,7 @@ export class Enqueue{
             
 
        }
-       
+        
 
 
       /* static enqueue(simulation:Simulation,entity: Entity,  queue: AbstractQueue<IEntity> ) 

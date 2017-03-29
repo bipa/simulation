@@ -33,7 +33,7 @@ export class Release{
             simulation.eventEmitter.once(simEvent.name,simE=>{
                  
                 
-                resource.activateNextState();
+                resource.setState();
                 if(resource.emitter.listenerCount("idle")===0)
                 {
                     simulation.nextStep2();

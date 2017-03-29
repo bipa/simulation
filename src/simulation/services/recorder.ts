@@ -52,76 +52,9 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 
     onResourceBeforeStateChanged = (resource:Resource)=>{
 
-                
-            let resStat =  this.resourceStats(resource);
-            let duration = this.simulation.simTime - resource.lastStateChangedTime;
-            let totalCurrentScheduledTime = this.getTotalCurrentScheduledTime(resource);
-
-            switch (resource.state) {
-                case ResourceStates.idle:
-                    //The resource IS NOT IDLE ANYMORE
-                    resource.idleTime+=duration;
-                    resStat.totalIdleTime+=duration;
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTime,resStat.totalIdleTime);
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTimePercentage,resStat.totalIdleTime/totalCurrentScheduledTime);
-                   
-                    break;
-                case ResourceStates.busy:
-                    //The resource IS NOT IDLE ANYMORE
-                    resource.busyTime+=duration;
-                    resStat.totalBusyTime+=duration;
-                    resStat.numberBusy.record(resStat.currentBusy,this.simulation.simTime-resStat.lastRecordedTime);
-
-                    if(resStat.currentScheduled===0)
-                    {
-                        resStat.instantaneousUtilization.record(0, this.simulation.simTime-resStat.lastRecordedTime)
-                    
-                    }
-                    else{
-                        resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simulation.simTime-resStat.lastRecordedTime)
-                    
-                    }
-                    resStat.lastRecordedTime = this.simulation.simTime;
-                    resStat.currentBusy--;
-
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalInstantaneousUtilization,resStat.instantaneousUtilization.average);
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTime,resStat.totalBusyTime);
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTimePercentage,resStat.totalBusyTime/totalCurrentScheduledTime);
-                   
-                    break;
-                case ResourceStates.transfer:
-                    //The resource IS NOT IDLE ANYMORE
-                    resource.transferTime+=duration;
-                    resStat.totalTransferTime+=duration;
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTime,resStat.totalTransferTime);
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTimePercentage,resStat.totalTransferTime/totalCurrentScheduledTime);
-                    
-                    break;
-                case ResourceStates.broken:
-                    //The resource IS NOT IDLE ANYMORE
-                    resource.brokenTime+=duration;
-                    resStat.totalBrokenTime+=duration;
-                    break;
-                case ResourceStates.seized:
-                    //The resource IS NOT SEIZED STATE ANYMORE
-                     resource.waitTime +=duration;
-                     resStat.totalWaitTime +=duration;
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalWaitTime,resStat.totalWaitTime);
-                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalWaitTimePercentage,resStat.totalWaitTime/totalCurrentScheduledTime);
-                   
-
-                    break;
-                case ResourceStates.other:
-                    //The resource IS NOT IDLE ANYMORE
-                    resource.otherTime+=duration;
-                    resStat.totalOtherTime+=duration;
-                    break;
-            
-                default:
-                    break;
-            }
-            
+                this.recordResource(resource);
             resource.lastStateChangedTime  = this.simulation.simTime;
+       
 
 
  
@@ -218,7 +151,16 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 
             this.simulation.resources.forEach(resource=>{
                 
-                    let resStat =  this.resourceStats(resource);
+                    this.recordResource(resource);
+                   
+            })
+
+    }
+
+
+
+    recordResource(resource:Resource){
+            let resStat =  this.resourceStats(resource);
                     let duration = this.simulation.simTime - resource.lastStateChangedTime;
  
                     if(resource.scheduledState===ScheduledStates.scheduled)
@@ -229,58 +171,73 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                         resStat.totalUnScheduledTime += this.simulation.simTime-resStat.lastScheduledTime;
               
                     }
-
-                    switch (resource.state) {
-                        case ResourceStates.idle:
-                            //The resource IS NOT IDLE ANYMORE
-                            resource.idleTime+=duration;
-                            resStat.totalIdleTime+=duration;
-                            this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTime,resStat.totalIdleTime);
-                            this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTimePercentage,resStat.totalIdleTime/resStat.totalScheduledTime);
-                 
-                            break;
-                        case ResourceStates.busy:
-                            //The resource IS NOT IDLE ANYMORE
-                            resource.busyTime+=duration;
-                            resStat.totalBusyTime+=duration;
-
-                            this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalInstantaneousUtilization,resStat.instantaneousUtilization.average);
-                            this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTime,resStat.totalBusyTime);
-                            this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTimePercentage,resStat.totalBusyTime/resStat.totalScheduledTime);
-                        
-                            break;
-                        case ResourceStates.transfer:
-                            //The resource IS NOT IDLE ANYMORE
-                            resource.transferTime+=duration;
-                            resStat.totalTransferTime+=duration;
-                             this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTime,resStat.totalTransferTime);
-                             this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTimePercentage,resStat.totalTransferTime/resStat.totalScheduledTime);
-                 
-                            break;
-                        case ResourceStates.broken:
-                            //The resource IS NOT IDLE ANYMORE
-                            resource.brokenTime+=duration;
-                            resStat.totalBrokenTime+=duration;
-                            break;
-                        case ResourceStates.seized:
-                            //If time lapses here, it means that the resource is waiting for the entity to come
-                            resource.waitTime +=duration;
-                            resStat.totalWaitTime +=duration;
-
-                            
-                            break;
-                        case ResourceStates.other:
-                            //The resource IS NOT IDLE ANYMORE
-                            resource.otherTime+=duration;
-                            resStat.totalOtherTime+=duration;
-                            break;
-                    
-                        default:
-                            break;
-                    }
+                    let totalCurrentScheduledTime = resStat.totalScheduledTime;
+                   switch (resource.state) {
+                case ResourceStates.idle:
+                    //The resource IS NOT IDLE ANYMORE
+                    resource.idleTime+=duration;
+                    resStat.totalIdleTime+=duration;
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTime,resStat.totalIdleTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTimePercentage,resStat.totalIdleTime/totalCurrentScheduledTime);
                    
-            })
+                    break;
+                case ResourceStates.busy:
+                    //The resource IS NOT IDLE ANYMORE
+                    resource.busyTime+=duration;
+                    resStat.totalBusyTime+=duration;
+                    resStat.numberBusy.record(resStat.currentBusy,this.simulation.simTime-resStat.lastRecordedTime);
 
+                    if(resStat.currentScheduled===0)
+                    {
+                        resStat.instantaneousUtilization.record(0, this.simulation.simTime-resStat.lastRecordedTime)
+                    
+                    }
+                    else{
+                        resStat.instantaneousUtilization.record(resStat.currentBusy/resStat.currentScheduled, this.simulation.simTime-resStat.lastRecordedTime)
+                    
+                    }
+                    resStat.lastRecordedTime = this.simulation.simTime;
+                    resStat.currentBusy--;
+
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalInstantaneousUtilization,resStat.instantaneousUtilization.average);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTime,resStat.totalBusyTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTimePercentage,resStat.totalBusyTime/totalCurrentScheduledTime);
+                   
+                    break;
+                case ResourceStates.transfer:
+                    //The resource IS NOT IDLE ANYMORE
+                    resource.transferTime+=duration;
+                    resStat.totalTransferTime+=duration;
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTime,resStat.totalTransferTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTimePercentage,resStat.totalTransferTime/totalCurrentScheduledTime);
+                    
+                    break;
+                case ResourceStates.broken:
+                    //The resource IS NOT IDLE ANYMORE
+                    resource.brokenTime+=duration;
+                    resStat.totalBrokenTime+=duration;
+                    break;
+                case ResourceStates.wait:
+                    //The resource IS NOT SEIZED STATE ANYMORE
+                     resource.waitTime +=duration;
+                     resStat.totalWaitTime +=duration;
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalWaitTime,resStat.totalWaitTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalWaitTimePercentage,resStat.totalWaitTime/totalCurrentScheduledTime);
+                   
+
+                    break;
+                case ResourceStates.other:
+                    //The resource IS NOT IDLE ANYMORE
+                    resource.otherTime+=duration;
+                    resStat.totalOtherTime+=duration; 
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalOtherTime,resStat.totalOtherTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalOtherTimePercentage,resStat.totalOtherTime/totalCurrentScheduledTime);
+                   
+                    break;
+            
+                default:
+                    break;
+            }
     }
 
     getTotalCurrentScheduledTime(resource:Resource) : number{
@@ -328,6 +285,75 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 //ENTITIES
 
  
+
+ addEntityStateListeners(entity:Entity){
+    
+        entity.emitter.on("onBeforeEntityStateChanged",this.onEntityBeforeStateChanged);
+    }
+
+
+
+    onEntityBeforeStateChanged = (entity:Entity)=>{
+
+                
+                
+            
+
+            this.recordEntityStat(entity,)
+            
+            entity.lastStateChangedTime  = this.simulation.simTime;
+
+
+ 
+    }
+
+ private recordEntityStat(entity:Entity){
+        
+      
+            let entityStat =  this.entityStats(entity);
+            let duration = this.simulation.simTime - entity.lastStateChangedTime;
+            entityStat.totTime += this.simulation.simTime - entity.lastStateChangedTime;
+
+        switch (entity.state) {
+            case EntityStates.valueAdded:
+                 entity.valueAddedTime+=duration;
+                 entityStat.totalValueAddedTime +=duration;
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalValueAddedTime,entityStat.totalValueAddedTime);
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalValueAddedTimePercentage,entityStat.totalValueAddedTime/entityStat.totTime);
+                   
+                break;
+            case EntityStates.wait:
+                 entity.waitTime+=duration;
+                 entityStat.totalWaitTime += duration;
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTime,entityStat.totalWaitTime);
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTimePercentage,entityStat.totalWaitTime/entityStat.totTime);
+              break;
+            case EntityStates.nonValueAdded:
+                 entity.nonValueAddedTime+=duration;
+                 entityStat.totalNonValueAddedTime += duration;
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalNonValueAddedTime,entityStat.totalNonValueAddedTime);
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalNonValueAddedTimePercentage,entityStat.totalNonValueAddedTime/entityStat.totTime);
+              break;
+            case EntityStates.transfer:
+                 entity.transferTime += duration;
+                 entityStat.totalTransferTime += duration;
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalTransferTime,entityStat.totalTransferTime);
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalTransferTimePercentage,entityStat.totalTransferTime/entityStat.totTime);
+              break;
+            case EntityStates.other:
+                 entity.otherTime += duration;
+                 entityStat.totalOtherTime += duration;
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTime,entityStat.totalOtherTime);
+                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTimePercentage,entityStat.totalOtherTime/entityStat.totTime);
+              break;
+        
+            default:
+                break;
+        }
+    }
+
+
+
     finalizeEntityRecords(){
          //WIP
         this.simulation.entities.forEach(entity=>{
@@ -345,8 +371,8 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 
     recordEntityDispose(entity:Entity){
         
-        this.entityStats(entity).countStats.leave(entity.timeEntered,this.simulation.simTime);
-        this.entityStats(entity).totalTime.record(entity.timeLeft  - entity.timeEntered);
+        this.entityStats(entity).countStats.leave(entity.timeCreated,this.simulation.simTime);
+        this.entityStats(entity).totalTime.record(entity.timeDisposed  - entity.timeCreated);
         this.recordEntityStats(entity);
                 
     }
@@ -355,49 +381,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         this.entityStats(entity).countStats.enter(this.simulation.simTime);
     }
 
-    recordEntityStat(entity:Entity,  timeStampBefore : number,allocation : EntityStates = EntityStates.valueAdded){
-        
-        let entityStat = this.entityStats(entity);
-        let duration = this.simulation.simTime - timeStampBefore;
-        let totalTime = this.getTotalCurrentTime(entity);
-        switch (allocation) {
-            case EntityStates.valueAdded:
-                 entity.valueAddedTime+=duration;
-                 entityStat.totalValueAddedTime +=duration;
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalValueAddedTime,entityStat.totalValueAddedTime);
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalValueAddedTimePercentage,entityStat.totalValueAddedTime/totalTime);
-                   
-                break;
-            case EntityStates.wait:
-                 entity.waitTime+=duration;
-                 entityStat.totalWaitTime += duration;
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTime,entityStat.totalWaitTime);
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTimePercentage,entityStat.totalWaitTime/totalTime);
-              break;
-            case EntityStates.nonValueAdded:
-                 entity.nonValueAddedTime+=duration;
-                 entityStat.totalNonValueAddedTime += duration;
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalNonValueAddedTime,entityStat.totalNonValueAddedTime);
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalNonValueAddedTimePercentage,entityStat.totalNonValueAddedTime/totalTime);
-              break;
-            case EntityStates.transfer:
-                 entity.transferTime += duration;
-                 entityStat.totalTransferTime += duration;
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalTransferTime,entityStat.totalTransferTime);
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalTransferTimePercentage,entityStat.totalTransferTime/totalTime);
-              break;
-            case EntityStates.other:
-                 entity.otherTime += duration;
-                 entityStat.totalOtherTime += duration;
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTime,entityStat.totalOtherTime);
-                 this.createSimulationRecord(entity.type,ExistingVariables.entityTotalWaitTimePercentage,entityStat.totalOtherTime/totalTime);
-              break;
-        
-            default:
-                break;
-        }
-    }
-
+  
     recordEntityStats(entity : Entity){
         
         this.entityStats(entity).nonValueAddedTime.record(entity.nonValueAddedTime);
@@ -412,7 +396,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
      
     }
 
-    entityStats(entity : IEntity) : EntityStats{
+    entityStats(entity : Entity) : EntityStats{
         return this.statistics.entityStats.get(entity.type);
     }
 
@@ -423,7 +407,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         let total = resStat.totalTime.Sum;;
 
           this.simulation.entities.forEach(entity=>{
-              total += this.simulation.simTime - entity.timeEntered;
+              total += this.simulation.simTime - entity.timeCreated;
                    
           });
 
@@ -432,7 +416,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 
     }
 
-
+ 
 //PROCESSES
 
     finalizeProcessRecords(){

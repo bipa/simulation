@@ -19,7 +19,7 @@ export class EntityStats{
     totalOtherTime:number=0;
 
 
-
+    totTime:number=0;
 
     //count stats
     countStats:Population;
@@ -36,4 +36,4 @@ export class EntityStats{
         this.otherTime = new DataSeries();
     } 
 
-}
+} 
