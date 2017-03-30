@@ -296,7 +296,7 @@ updateNextLog(scenario : Scenario){
 
 updateNextVariable(scenario : Scenario){
   
-        if(scenario.runtimeModel.nextRecord && this.simTime>=scenario.runtimeModel.nextRecord.simTime){
+        while(scenario.runtimeModel.nextRecord && this.simTime>=scenario.runtimeModel.nextRecord.simTime){
           let variableRow  = this.rows.find(r=>{return r.name==scenario.runtimeModel.nextRecord.name });
           variableRow[scenario.name] = scenario.runtimeModel.nextRecord.value;
           this.updateNextRecord(scenario);

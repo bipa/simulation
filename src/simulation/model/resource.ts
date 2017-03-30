@@ -45,7 +45,7 @@ export class Resource extends Base{
         this.seizedBy.splice(index,1);
         if(this.seizedBy.length===0){
             
-            this.isSeized = true;
+            this.isSeized = false;
             this.setState();
         }
     }

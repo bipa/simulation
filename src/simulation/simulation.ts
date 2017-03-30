@@ -87,7 +87,9 @@ preferences:any;
   constructor(model : any) {
     this.useLogging = model.preferences.useLogging || false;
     this.random = new Random(model.preferences.seed);
+    this.preferences = model.preferences;
     model.preferences.baseUnit = model.preferences.baseUnit || Units.Minute;
+    model.preferences.hoursPerDay = model.preferences.hoursPerDay || 24;
     model.preferences.baseScale = this.setTimeScale(model.preferences.baseUnit);
     this.simTime = 0;
     this.entities = [];
@@ -182,10 +184,52 @@ setTimer<T>(delay,type=null,message=null) : SimEvent<T>{
     return null;
 }
 
+simulateNonAsync(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) {
+    
+         this.eventEmitter.once("done",(success)=>{
+                let result: any= {};
+                let rtScenario = {
+                            runtimeModel:{
+                                charts:this.charts,
+                                variables: this.runtime.variables,
+                                data:this.data,
+                                preferences:this.preferences,
+                                simulationRecords:null,
+                                logRecords:null
+                            }
+
+            }
+            let simRes = new SimulationResult();
+            simRes.logRecords  = this.logRecords;
+            simRes.simulationRecords = this.simulationRecords;
+            //simRes.statistics = this.recorder.statistics.report();
+            rtScenario.runtimeModel.simulationRecords = this.simulationRecords;
+            delete rtScenario.runtimeModel.data;
+            //delete rtScenario.runtimeModel.data.routes;
+            rtScenario.runtimeModel.logRecords = this.logRecords;
+            result.scenario = rtScenario;
+         });
+         this.eventCount = 0;
+         this.endTime = endTime || this.endTime;
+         
+         this.simulator.step(0,()=>{
+
+                //simulation done by iterations
+
+                let i =0;
+
+         });
+  
+   
+}
 
 simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<any> {
      let promise = new Promise<any>(async(resolve,reject)=>{
          this.eventEmitter.once("done",(success)=>{
+
+            
+            this.finalize();
+
              let result: any= {};
         let rtScenario = {
                             runtimeModel:{
@@ -211,7 +255,13 @@ simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<any> {
          });
          this.eventCount = 0;
          this.endTime = endTime || this.endTime;
-         this.simulator.step();
+         
+         this.simulator.step(0,()=>{
+
+                //simulation done by iterations
+
+
+         });
     })
 return promise;
   
@@ -271,7 +321,13 @@ addRandomValue(dist:Distribution){
 
     //if dist is just a number, following the default scale
    // if(!(dist instanceof Object) && !(parseInt(dist).isNaN())) return dist;
-    let scale = this.setTimeScale(dist.unit  || this.preferences.baseUnit);
+
+   if(dist.unit===null){
+
+        dist.unit = this.preferences.baseUnit;
+   }
+
+    let scale = this.setTimeScale(dist.unit);
     let value = null;
     switch (dist.type) {
       case Distributions.Constant:
@@ -312,9 +368,9 @@ addRandomValue(dist:Distribution){
             case Units.Hour:
               return 60;
             case Units.Day:
-              return 60*24;
+              return 60*this.preferences.hoursPerDay;
             case Units.Week:
-              return 7*60*24;
+              return 7*60*this.preferences.hoursPerDay;
           
             default:
             case Units.Minute:

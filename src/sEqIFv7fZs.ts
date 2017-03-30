@@ -1,32 +1,33 @@
-
-
-
 import {Simulation,ExistingVariables} from './simulation/simulation'
 import {Distributions,Units} from './simulation/stats/distributions'
 import {Route} from './simulation/model/route'
 import {Station} from './simulation/model/station'
 import {Entity,EntityStates} from './simulation/model/entity'
-import {Resource,ResourceStates} from './simulation/model/resource'
+import {Resource, ResourceStates} from './simulation/model/resource'
 
 
 export class Demo{
 
 
+logText:"";
 data  :any                        = {}; //don't remove this line
 constants  :any                        = {}; //don't remove this line
 model:any;
-
+variables:any = {};
 constructor(){
 
-    this.data.numberOfNurses                = 4;
+    
+this.data.numberOfNurses                    = 4;
     this.data.patientANeedsMedicinePb       = 0.3;
-    this.data.nurseFindMedicineDuration         = {unit:Units.Minute,value:3};
+    this.data.nurseFindMedicineDuration     = {unit:Units.Minute,value:3};
     this.data.patientWakeupDuration         = {unit:Units.Minute,type:Distributions.Triangular, param1:5,param2:8,param3:15};
     this.data.wakeUpDepartmentTime          = {unit:Units.Hour, value:0}; //wakeup happens in beginning of the day
     this.data.wakeUpDepartmentInterval      = {unit:Units.Day, value:1}; //repeat every 24 hours
+    this.data.storageTripProbability        = 0.3;
 
-    this.data.storageTripProbability = 0.3;
 
+    this.data.stations  = {};
+    
     this.data.stations  = {};
     this.data.stations.p1A = new Station("patientRoom1",1);
     this.data.stations.p2A = new Station("patientRoom2",1);
@@ -44,12 +45,11 @@ constructor(){
     this.data.stations.base = new Station("base");
     this.data.stations.medicine = new Station("medicine");
     this.data.stations.breakfast = new Station("breakfast");
-
-
+    
+    
+    
     this.data.patientRooms = Simulation.getFromData(this.data.stations, s=>{ return s.tag===1});
     this.data.rooms = Simulation.stations(this.data.stations);
-
-
     this.data.routes=[
 
 
@@ -199,11 +199,21 @@ constructor(){
 
     ]
 
-    this.data.routes = Simulation.routes(this.data.routes,this.data.rooms);
+    let variables : any = {}; //don't remove this line - declaration
+variables.kpi = {}; //don't remove this line - declaration
+variables.existing = [
+    {type:"patientA",variable:ExistingVariables.entityTotalWaitTimePercentage,name:"patientATotalWaitTimePercentage",display:"Part ventetid %"},
+    {type:"patientA",variable:ExistingVariables.entityTotalValueAddedTimePercentage,name:"patientATotalValueAddedTimePercentage",display:"Part VA tid %"},
+    {type:"patientA",variable:ExistingVariables.entityTotalTransferTimePercentage,name:"patientATotalTransferTimePercentage",display:"Parttransfer tid %"},
+    {type:"nurse",variable:ExistingVariables.resourceTotalBusyTimePercentage,name:"nurseTotalBusyTimePercentage",display:"Worker busy %"},
+    {type:"nurse",variable:ExistingVariables.resourceTotalIdleTimePercentage,name:"nurseTotalIdleTimePercentage",display:"Worker idle %"},
+    {type:"nurse",variable:ExistingVariables.resourceTotalWaitTimePercentage,name:"nurseTotalWaitTimePercentage",display:"Worker wait %"},
+    {type:"nurse",variable:ExistingVariables.resourceTotalTransferTimePercentage,name:"nurseTotalTransferTimePercentage",display:"Worker transfer %"},
 
-    let variables : any                         = {}; //don't remove this line - declaration
-    variables.kpi                      = {}; //don't remove this line - declaration
-    variables.kpi.queueLength = 0;
+
+]                  
+
+   this.variables = variables;
 
     this.model = {
         data:this.data,
@@ -211,20 +221,44 @@ constructor(){
         stations:this.data.rooms,
         routes:this.data.routes,
         entities:this.getEntities(),
+        charts:this.getCharts(),
         preferences:this.getPreferences()
-
     
 
     };
 
+    //this.model.preferences.logger = this.logger;
 }
- 
+
+  getCharts(){
+    let a = [
+            { variable:"nurseTotalBusyTimePercentage"},
+            { variable:"nurseTotalIdleTimePercentage"},
+            { variable:"nurseTotalWaitTimePercentage"}
+];
+    return a;
+    }
 
  
+ getFromData<T>(obj : any) : T[]
+ {  
+     let a : T[] = [];
+
+    for(let o in obj){
+        let value = obj[o];
+        a.push(value);
+    }
+
+    return a;
+ }
+ 
+
+
+
 
  getEntities(){
-    return [
-        {
+    let a = [
+{
             type:"patientA",
             creation:{
                 runOnce:true,
@@ -318,63 +352,31 @@ constructor(){
         
 
 
-    ];
-}
-
-
-
-
-/*if(ctx.tasks.yesNo(ctx.data.patientANeedsMedicine)){
-                                let seizeResult = await ctx.seize(patient,ctx.data.nursesDepA,ctx.queue("nursesQueue"));
-                                await ctx.walkTo(seizeResult.resource,patient.currentStation);  
-                                await ctx.walkTo(seizeResult.resource,ctx.data.stations.medicine);
-                                await ctx.walkTo(seizeResult.resource,patient.currentStation);    
-
-                               
-                          }*/
-                    
-                           //Each patient needs a nurse to give medicine and
-                           //And help to wake up
-
-
-
-
+    ];;
+    return a;
+    }
 getPreferences() {
-
-    return {
+     let a = 
+  {
         seed:1234,
         simTime:200,
         baseUnit:Units.Day,
         useLogging:true,
         hoursPerDay:1
+  };
+    return a;
+}
+
+
+
+
+
+  simulate() : Promise<any>{
+        let simulation = new Simulation(this.model);
+        return  simulation.simulate();
     }
 
 
 
-}
-
-simulateNonAsync(){
-     let simulation = new Simulation(this.model);
-        simulation.simulateNonAsync();
-        simulation.report();
-}
-
-  async simulate() {
-      try {
-          
-        let simulation = new Simulation(this.model);
-        let simRes = await simulation.simulate();
-        simulation.report();
-
-      } catch (error) {
-          console.log(error)
-      }
 
 }
-
-
-
-}
-
-let d = new Demo();
-d.simulate();

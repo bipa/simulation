@@ -60,7 +60,7 @@ export class Tasker{
     *walk(entity:IBase,from:Station,to : Station,speed=1) {
             speed = entity.speed  || speed;
             let route = this.simulation.route(from,to);
-            let time  = speed*route.distance;
+            let time  = speed*route.distance/60;
             let timeStampBefore = this.simulation.simTime;
             if(entity instanceof Resource)
             {
@@ -89,7 +89,7 @@ export class Tasker{
             
             yield;
             entity.currentStation = to;
-            if(entity instanceof Resource)
+           /* if(entity instanceof Resource)
             {
                     let resource =  entity as Resource;
                     resource.setState();
@@ -97,7 +97,7 @@ export class Tasker{
             else 
             {
                   //  this.simulation.recorder.recordEntityStat(entity as Entity,timeStampBefore,EntityStates.transfer);
-            }
+            }*/
             
 
     }
@@ -342,7 +342,7 @@ export class Tasker{
            }else{
                 resource.setState(resourceState);
            }
-           
+           entity.releaseResource(resource);
             entity.setState(entityState)
 
     }

@@ -192,7 +192,7 @@ validate(model){
 import {Distributions,Units} from './simulation/stats/distributions'
 import {Route} from './simulation/model/route'
 import {Station} from './simulation/model/station'
-import {Entity} from './simulation/model/entity'
+import {Entity,EntityStates} from './simulation/model/entity'
 import {Resource, ResourceStates} from './simulation/model/resource'
 
 

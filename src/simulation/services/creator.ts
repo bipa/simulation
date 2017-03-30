@@ -77,10 +77,7 @@ export class Creator{
 //ENTITIES
 
 
-
-
-  createEntities(entityModels:any[]){
-    entityModels.forEach(entityModel=>{
+    createModel(entityModel:any){
         this.simulation.entityModels.set(entityModel.type,entityModel);
         entityModel.creation.quantity = entityModel.creation.quantity || 1;
         if(!entityModel.isResource)  this.simulation.recorder.addEntityStats(entityModel.type);
@@ -89,7 +86,16 @@ export class Creator{
 
 
         this.scehduleCreationYield(entityModel);
-    })
+    }
+
+  createEntities(entityModels:any[]){
+    entityModels.filter(m=> {return m.isResource}).forEach(entityModel=>{
+        this.createModel(entityModel);
+    });
+
+     entityModels.filter(m=> {return !m.isResource}).forEach(entityModel=>{
+        this.createModel(entityModel);
+    });
   }
 
     scehduleCreationYield(entityModel){

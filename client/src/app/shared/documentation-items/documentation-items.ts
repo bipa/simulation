@@ -380,8 +380,11 @@ this.categories.push(this.DOCS[2]);
   
 
 
-   async getScenarioes(projectId:string){
+   async getScenarioes(projectId:string){ 
+     
+        this.loaderService.showSpinner = true;
         let result =  await this.scenarioesPromise;
+        this.loaderService.showSpinner = false;
         return result.filter(scenario=>{
           return scenario.projectId===projectId;
         })

@@ -35,28 +35,27 @@ export class Simulator{
      }
 
 
+condition = false; // potential means "maybe never"
+    max = 1000000;
 
+    inner_step(){
 
-     step(){
-        if(this._queue.size ===0 )
+         if(this._queue.size ===0 )
         {
-             this.simulation.finalize();
             this.simulation.eventEmitter.emit("done", true);
             return;
         } 
-      
 
-        let simEvent  = this._queue.poll();
+         let simEvent  = this._queue.poll();
 
         this.simulation.simTime = simEvent.deliverAt;
-      this.simulation.eventCount++;
-      this.simulation.currentSimEvent = simEvent;
+        this.simulation.eventCount++;
+        this.simulation.currentSimEvent = simEvent;
 
-    if (simEvent.deliverAt > this.simulation.endTime)  {
-          this.simulation.finalize();
+        if (simEvent.deliverAt > this.simulation.endTime)  {
           this.simulation.eventEmitter.emit("done", true);
           return;
-      };
+        };
 
 
      // event.isConcurrent ? this.simTime = event.deliverAt-Simulation.epsilon : this.simTime  = event.deliverAt;
@@ -77,11 +76,39 @@ export class Simulator{
         else{
              this.simulation.eventEmitter.emit(simEvent.name, true);
         }
+    }
+
+
+
+
+
+     step(i,resume){
+
+            this.inner_step();
+
+            if( i < this.max ) {
+                if( this.condition ) { 
+                    
+                } else {
+                    if( i % 1000 === 0 ) {
+                        setTimeout( ()=> {
+                            this.step( i+1, resume ); 
+                        }, 0 );
+                    } else {
+                        this.step( i+1, resume ); 
+                    }
+                }
+            } else {
+                resume();
+            }
+
+
+       
+      
+
+       
         
 
-
-       this.step();
-            
 
 
      }
@@ -108,7 +135,7 @@ scheduleEvent(simEvent:ISimEvent){
 }
 
 
- 
+  
 
 
 
