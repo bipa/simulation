@@ -29,17 +29,21 @@ export class Entity extends Base{
         this.state = EntityStates.valueAdded;
     }
 
-
+    releaseResources(resourceState:ResourceStates=ResourceStates.idle){
+        for(let resource of this.seizedResources){
+            this.releaseResource(resource,resourceState);
+        }
+    }
     
     seizeResource(resource:Resource){
         this.seizedResources.push(resource);
         resource.seize(this);
     }
 
-    releaseResource(resource:Resource){
+    releaseResource(resource:Resource,resourceState:ResourceStates=ResourceStates.idle){
         let index = this.seizedResources.indexOf(resource);
         this.seizedResources.splice(index,1);
-        resource.unSeize(this);
+        resource.unSeize(this,resourceState);
     }
 
 
@@ -55,6 +59,30 @@ export class Entity extends Base{
 
     setState(nextNextState : EntityStates =EntityStates.valueAdded){
         
+        if(this.state === nextNextState ) return;
+
+
+
+          switch (this.state) {
+            case EntityStates.nonValueAdded:
+                this.emitter.emit("NVA", this);
+                break;
+            case EntityStates.valueAdded:
+                this.emitter.emit("VA", this);
+                break;
+            case EntityStates.transfer:
+                this.emitter.emit("transferTime", this);
+                break;
+            case EntityStates.other:
+                this.emitter.emit("otherTime", this);
+                break;
+            case EntityStates.wait:
+                this.emitter.emit("waitTime", {entity:this,event:"waitTime"});
+                break;
+        
+            default:
+                break;
+        }
         
         this.changeState(nextNextState);
 

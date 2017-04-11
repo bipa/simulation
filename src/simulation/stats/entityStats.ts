@@ -18,6 +18,13 @@ export class EntityStats{
     totalTransferTime:number=0;
     totalOtherTime:number=0;
 
+    
+    averageWaitTime:number=0;
+    averageValueAddedTime:number =0;
+    averageNonValueAddedTime: number=0;
+    averageTransferTime:number=0;
+    averageOtherTime:number=0;
+
     count:number=0;
 
     totTime:number=0;
@@ -38,3 +45,12 @@ export class EntityStats{
     } 
 
 } 
+
+
+export class EntityDurations{
+    waitTime:number=0;
+    valueAddedTime:number =0;
+    nonValueAddedTime: number=0;
+    transferTime:number=0;
+    otherTime:number=0;
+}

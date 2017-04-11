@@ -446,7 +446,6 @@ let routes =
    { from:"baseA", to:"PA4",  distance:19},
    { from:"baseA", to:"PA5",  distance:15},
    { from:"baseA", to:"PA6",  distance:19 },
-    
    { from:"baseA", to:"PA7",  distance:5 },
    { from:"baseA", to:"PA8",  distance:8 },
    { from:"baseA", to:"PA9",  distance:13},
@@ -533,6 +532,15 @@ let routes =
     
    { from:"PA11", to:"PA12", distance:5},
       
+
+
+  
+
+
+
+
+
+  
 ];
 
 

@@ -188,6 +188,7 @@ simulateNonAsync(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) {
     
          this.eventEmitter.once("done",(success)=>{
                 let result: any= {};
+                if(this.runtime.variables.noLog) delete this.runtime.variables.noLog;
                 let rtScenario = {
                             runtimeModel:{
                                 charts:this.charts,
@@ -230,6 +231,7 @@ simulate(endTime = null, maxEvents = Number.POSITIVE_INFINITY ) : Promise<any> {
             
             this.finalize();
 
+                if(this.runtime.variables.noLog) delete this.runtime.variables.noLog;
              let result: any= {};
         let rtScenario = {
                             runtimeModel:{
@@ -537,6 +539,12 @@ export class Variable{
         entityTotalTransferTime,
         entityTotalOtherTime,
 
+        entityAverageValueAddedTime,
+        entityAverageNonValueAddedTime,
+        entityAverageWaitTime,
+        entityAverageTransferTime,
+        entityAverageOtherTime,
+
         entityTotalValueAddedTimePercentage,
         entityTotalNonValueAddedTimePercentage,
         entityTotalWaitTimePercentage,
@@ -551,6 +559,13 @@ export class Variable{
         resourceTotalWaitTime,
         resourceTotalOtherTime,
         resourceTotalInActiveTime,
+
+        resourceAverageIdleTime,
+        resourceAverageBusyTime,
+        resourceAverageTransferTime,
+        resourceAverageWaitTime,
+        resourceAverageOtherTime,
+        resourceAverageInActiveTime,
 
         resourceTotalIdleTimePercentage,
         resourceTotalBusyTimePercentage,

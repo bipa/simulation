@@ -33,8 +33,8 @@
     </div>
 
    <div fxFlex></div>
-    <span>Speed: </span>
-    <md-slider style="margin-right: 15px;" max="100" min="0" [value]="delay"></md-slider>
+   <!-- <span>Speed: </span>
+    <md-slider style="margin-right: 15px;" max="100" min="0" [value]="delay"></md-slider>-->
     
     <span style="margin-right: 5px;">Skala:</span>
     <input  mdInput style="width: 50px;margin-right: 15px;" type="number" placeholder="Tick interval" [(ngModel)]="speed">
@@ -97,7 +97,7 @@
                                     </ngx-datatable-column>
                                     <ngx-datatable-column  width="100" *ngFor="let scenario of scenarioes" name="{{scenario.name}}" >
                                     <template let-row="row" ngx-datatable-cell-template>
-                                       <div style="text-align: center"><strong>{{row[scenario.name] | number : '1.2-2'}}</strong></div> 
+                                       <div style="text-align: center"><strong>{{row[scenario.name] | number : '1.4-6'}}</strong></div> 
                                     </template>
                                     </ngx-datatable-column>                                  
                                 </ngx-datatable>

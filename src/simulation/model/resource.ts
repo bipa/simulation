@@ -40,13 +40,19 @@ export class Resource extends Base{
         this.setState(ResourceStates.busy);
     }
 
-    unSeize(entity : Entity){
+    unSeizeAll(resourceState:ResourceStates = ResourceStates.idle){
+        this.seizedBy.forEach(entity=>{
+            entity.releaseResource(this,resourceState);
+        });
+    }
+
+    unSeize(entity : Entity,resourceState:ResourceStates = ResourceStates.idle){
         let index = this.seizedBy.indexOf(entity);
         this.seizedBy.splice(index,1);
         if(this.seizedBy.length===0){
             
             this.isSeized = false;
-            this.setState();
+            this.setState(resourceState);
         }
     }
 
@@ -71,7 +77,6 @@ export class Resource extends Base{
 
     private changeState(newState : ResourceStates){
         
-        if(this.state === newState ) return;
         this.emitter.emit("onBeforeResourceStateChanged", this);
         this.state = newState;
         this.emitter.emit("onAfterResourceStateChanged", this);
@@ -79,7 +84,40 @@ export class Resource extends Base{
 
 
     setState(newState : ResourceStates = ResourceStates.idle){
+
+
+        if(this.state === newState ) return;
+
+
+          switch (this.state) {
+            case ResourceStates.idle:
+                this.emitter.emit("idleTime", {resource:this,event:"idleTime"});
+                break;
+            case ResourceStates.busy:
+                this.emitter.emit("busyTime", {resource:this,event:"busyTime"});
+                break;
+            case ResourceStates.broken:
+                this.emitter.emit("broken", this);
+                break;
+            case ResourceStates.other:
+                this.emitter.emit("other", this);
+                break;
+            case ResourceStates.wait:
+                this.emitter.emit("wait", this);
+                break;
+            case ResourceStates.transfer:
+                this.emitter.emit("transferTime", {resource:this,event:"transferTime"});
+                break;
+            case ResourceStates.released:
+                this.emitter.emit("other", this);
+                break;
+            case ResourceStates.inActive:
+                this.emitter.emit("inActive", this);
+                break;
         
+            default:
+                break;
+        }
         
         this.changeState(newState);
 

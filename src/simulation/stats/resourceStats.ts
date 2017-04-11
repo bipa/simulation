@@ -19,6 +19,17 @@ export class ResourceStats extends EntityStats{
     totalBrokenTime : number =0 ;
     totalOtherTime : number = 0;
     totalinActiveTime: number=0;
+
+    averageUnScheduledTime:number=0;
+    averageScheduledTime : number = 0;
+    averageBusyTime : number = 0;
+    averageTransferTime : number = 0;
+    averageIdleTime: number =0;
+    averageBrokenTime : number =0 ;
+    averageOtherTime : number = 0;
+    averageinActiveTime: number=0;
+
+
     simTime:number;
 
 
@@ -55,4 +66,16 @@ export class ResourceStats extends EntityStats{
 
             return busyAverage/numberScheduledAverage; 
     }
+}
+
+export class ResourceDurations{
+    
+    unScheduledTime:number=0;
+    scheduledTime : number = 0;
+    busyTime : number = 0;
+    transferTime : number = 0;
+    idleTime: number =0;
+    brokenTime : number =0 ;
+    otherTime : number = 0;
+    inActiveTime: number=0;
 }

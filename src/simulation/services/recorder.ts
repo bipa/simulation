@@ -5,12 +5,17 @@ import {IEntity} from '../model/ientity';
 import {ISimulation} from '../model/iSimulation';
 import {Simulation,Variable,ExistingVariables,SimulationRecord} from '../simulation';
 import {Statistics} from '../stats/statistics';
-import {EntityStats} from '../stats/entityStats';
-import {ResourceStats} from '../stats/resourceStats';
+import {EntityStats, EntityDurations} from '../stats/entityStats';
+import {ResourceStats,ResourceDurations} from '../stats/resourceStats';
 
 
 export class Recorder{
 
+
+    static instance : Recorder;
+
+    entityRecordings : Map<Entity,EntityDurations>;
+    resourceRecordings : Map<Resource,ResourceDurations>;
 
     statistics:Statistics;
     simulation:ISimulation;
@@ -20,6 +25,9 @@ export class Recorder{
         this.variables = [];
         this.simulation = simulation;
         this.statistics = new Statistics();
+        Recorder.instance = this;
+        this.entityRecordings  = new Map<Entity,EntityDurations>();
+        this.resourceRecordings  = new Map<Resource,ResourceDurations>();
     }
 
 //VARIABLES
@@ -179,6 +187,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                     resStat.totalIdleTime+=duration;
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTime,resStat.totalIdleTime);
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalIdleTimePercentage,resStat.totalIdleTime/totalCurrentScheduledTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceAverageIdleTime,resStat.averageIdleTime+ duration/resStat.currentScheduled);
                    
                     break;
                 case ResourceStates.busy:
@@ -202,6 +211,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalInstantaneousUtilization,resStat.instantaneousUtilization.average);
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTime,resStat.totalBusyTime);
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalBusyTimePercentage,resStat.totalBusyTime/totalCurrentScheduledTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceAverageBusyTime,resStat.averageBusyTime+ duration/resStat.currentScheduled);
                    
                     break;
                 case ResourceStates.transfer:
@@ -210,6 +220,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
                     resStat.totalTransferTime+=duration;
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTime,resStat.totalTransferTime);
                     this.createSimulationRecord(resource.type,ExistingVariables.resourceTotalTransferTimePercentage,resStat.totalTransferTime/totalCurrentScheduledTime);
+                    this.createSimulationRecord(resource.type,ExistingVariables.resourceAverageTransferTime,resStat.averageTransferTime+ duration/resStat.currentScheduled);
                     
                     break;
                 case ResourceStates.broken:
@@ -382,17 +393,94 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
         });
 
     }
+ listenResource(resourceEvent: any){
+        
+            let eDur = Recorder.instance.resourceRecordings.get(resourceEvent.resource);
+            let duration = Recorder.instance.simulation.simTime - resourceEvent.resource.lastStateChangedTime;
+            eDur[resourceEvent.event] +=duration;
+    }
+
+    startRecordResourceStats(resource:Resource, event : string){
+        if(!this.resourceRecordings.has(resource))
+        {
+            let eDur = new ResourceDurations();
+            this.resourceRecordings.set(resource,eDur);
+            resource.emitter.on(event,this.listenResource)
+        }else{
+            let eDur = this.resourceRecordings.get(resource);
+            this.resourceRecordings.set(resource,eDur);
+            resource.emitter.on(event,this.listenResource)
+        }
+    }
+
+
+    endRecordResourceStats(resource:Resource,event:string,deleteResource:boolean=true) : ResourceDurations{
+        
+        if(this.resourceRecordings.has(resource))
+        {
+            let eDur =  this.resourceRecordings.get(resource);
+            if(deleteResource)
+                this.resourceRecordings.delete(resource);
+            resource.emitter.removeListener(event,this.listenResource);
+
+            return eDur;
+        }
+            
+        return null;
+
+
+    }
+
+    listenEntity(entityEvent: any){
+        
+            let eDur = Recorder.instance.entityRecordings.get(entityEvent.entity);
+            let duration = Recorder.instance.simulation.simTime - entityEvent.entity.lastStateChangedTime;
+            eDur[entityEvent.event] +=duration;
+    }
+
+    startRecordEntityStats(entity:Entity, event : string){
+        if(!this.entityRecordings.has(entity))
+        {
+            let eDur = new EntityDurations();
+            this.entityRecordings.set(entity,eDur);
+            entity.emitter.on(event,this.listenEntity)
+        }
+    }
+
+
+    endRecordEntityStats(entity:Entity,event:string) : EntityDurations{
+        
+        if(this.entityRecordings.has(entity))
+        {
+            let eDur =  this.entityRecordings.get(entity);
+            this.entityRecordings.delete(entity);
+            entity.emitter.removeListener(event,this.listenEntity);
+
+            return eDur;
+        }
+            
+        return null;
+
+
+    }
 
 
     recordEntityDispose(entity:Entity){
         
         let entStat = this.entityStats(entity);
-
+        let oldCount = entStat.countStats.count;
         entStat.countStats.record(entStat.count,entity.timeDisposed  - entity.timeCreated);
         entStat.totalTime.record(entity.timeDisposed  - entity.timeCreated);
+ 
+ 
+                
+
         this.recordEntityStat(entity);
         this.recordEntityStats(entity);
         this.entityStats(entity).count--;
+
+        
+        this.createSimulationRecord(entity.type,ExistingVariables.entityAverageWaitTime,entStat.averageWaitTime*oldCount/(oldCount+1)+entity.waitTime/(oldCount+1));
                 
     }
 
@@ -418,7 +506,7 @@ createSimulationRecord(type :string,existingVariable:ExistingVariables,value:num
 
         }
      
-    }
+    } 
 
     entityStats(entity : Entity) : EntityStats{
         return this.statistics.entityStats.get(entity.type);

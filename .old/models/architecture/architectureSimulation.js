@@ -66,7 +66,7 @@ class ArchitectureSimulation {
         this.routes = new Map();
     
         model.entities.forEach(u=>this.sim.addEntity(BaseEntity,u.name,[u,this]));     
-                  
+                  zzz
         this.generateStations(model); 
                   
         this.generateRoutes(model);          

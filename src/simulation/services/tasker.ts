@@ -298,14 +298,30 @@ export class Tasker{
 
 
 
+    forceSeize(entity:Entity,resources:Resource[],quantity:number=1){
+            
+           let req = this.simulation.resourceBroker.forceSeize(entity,resources,quantity);
+
+           return req;
+
+           /* if(req.isDone)
+            {
+                return req.seizeResult;
+            }*/
+
+    }
 
 
 
 
 
 
-
-
+    newEvent(type:string, message:string,generator:any,data:any=null){
+            
+        let newSimEvent = new SimEvent(this.simulation.simTime,0,type,message);
+        newSimEvent.generator = generator(data,this.simulation);
+        this.simulation.scheduleEvent(newSimEvent);
+    }
 
 
     startEventFrom(simEvent:ISimEvent,generator:any){

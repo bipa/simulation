@@ -18,12 +18,23 @@ model:any;
 
 constructor(){
 
-    this.data.numberOfNurses                = 4;
-    this.data.patientANeedsMedicinePb       = 0.3;
-    this.data.nurseFindMedicineDuration         = {unit:Units.Minute,value:3};
-    this.data.patientWakeupDuration         = {unit:Units.Minute,type:Distributions.Triangular, param1:5,param2:8,param3:15};
-    this.data.wakeUpDepartmentTime          = {unit:Units.Hour, value:0}; //wakeup happens in beginning of the day
-    this.data.wakeUpDepartmentInterval      = {unit:Units.Day, value:1}; //repeat every 24 hours
+    this.data.hoursPerDay                    = 1;
+    this.data.numberOfNurses                 = 4;
+    this.data.patientANeedsMedicinePb        = 0.3;
+    this.data.patientBNeedsMedicinePb        = 0.7;
+    this.data.patientANeedsHelpBreakfastProb = 0.2;
+    this.data.patientBNeedsHelpBreakfastProb = 0.6;
+    this.data.nurseFindMedicineDuration      = {unit:Units.Minute,value:3};
+    this.data.patientAWakeupDuration         = {unit:Units.Minute,type:Distributions.Triangular, param1:5,param2:8,param3:15};
+    this.data.patientBWakeupDuration         = {unit:Units.Minute,type:Distributions.Triangular, param1:8,param2:12,param3:16};
+    this.data.wakeUpDepartmentTime           = {unit:Units.Hour, value:0}; //wakeup happens in beginning of the day
+    this.data.wakeUpDepartmentInterval       = {unit:Units.Day, value:1}; //repeat every 24 hours
+ 
+     
+    this.data.patientAAcuteTime              = {unit:Units.Day,type:Distributions.Exponential, param1:6};
+    this.data.patientBAcuteTime              = {unit:Units.Day,type:Distributions.Exponential, param1:3};
+    this.data.patientAAcuteDuration          = {unit:Units.Minute,type:Distributions.Exponential, param1:20};
+    this.data.patientBAcuteDuration          = {unit:Units.Minute,type:Distributions.Exponential, param1:40};
 
     this.data.storageTripProbability = 0.3;
 
@@ -203,7 +214,14 @@ constructor(){
 
     let variables : any                         = {}; //don't remove this line - declaration
     variables.kpi                      = {}; //don't remove this line - declaration
-    variables.kpi.queueLength = 0;
+    variables.patientsAverageWaitTime = 0;
+
+        variables.nursesAverageIdleTime = 0;
+        variables.nursesAverageBusyTime =0;
+        variables.nursesAverageTransferTime=0;
+
+    variables.noLog  ={};
+    variables.noLog.daysCount=0;
 
     this.model = {
         data:this.data,
@@ -228,7 +246,7 @@ constructor(){
             type:"patientA",
             creation:{
                 runOnce:true,
-                quantity:12,
+                quantity:6,
                 createBatch:function*(patients : Entity[],ctx : Simulation){
                     
                         ctx.data.patientsA = patients;
@@ -239,12 +257,6 @@ constructor(){
                         ctx.data.patientsA[4].room = ctx.data.stations.p5A;
                         ctx.data.patientsA[5].room = ctx.data.stations.p6A;
 
-                        ctx.data.patientsA[6].room = ctx.data.stations.p7A;
-                        ctx.data.patientsA[7].room = ctx.data.stations.p8A;
-                        ctx.data.patientsA[8].room = ctx.data.stations.p9A;
-                        ctx.data.patientsA[9].room = ctx.data.stations.p10A;
-                        ctx.data.patientsA[10].room = ctx.data.stations.p11A;
-                        ctx.data.patientsA[11].room = ctx.data.stations.p12A;
 
                         
                         ctx.data.patientsA[0].currentStation = ctx.data.stations.p1A;
@@ -254,18 +266,82 @@ constructor(){
                         ctx.data.patientsA[4].currentStation = ctx.data.stations.p5A;
                         ctx.data.patientsA[5].currentStation = ctx.data.stations.p6A;
                         
-                        ctx.data.patientsA[6].currentStation = ctx.data.stations.p7A;
-                        ctx.data.patientsA[7].currentStation = ctx.data.stations.p8A;
-                        ctx.data.patientsA[8].currentStation = ctx.data.stations.p9A;
-                        ctx.data.patientsA[9].currentStation = ctx.data.stations.p10A;
-                        ctx.data.patientsA[10].currentStation = ctx.data.stations.p11A;
-                        ctx.data.patientsA[11].currentStation = ctx.data.stations.p12A;
                 }    
             },
+            randomEvents:[
+                  {
+                    name:"acuteA",
+                    message:"is acute",
+                    dist:this.data.patientAAcuteTime,
+                    action: function *(patientA : Entity,ctx:Simulation){
+                        
+
+                            let nurses = ctx.tasks.forceSeize(patientA,ctx.data.nursesDepA,2);
+                            let nurse1 = nurses[0];
+                            let nurse2 = nurses[1];
+
+                           let simEvent1 =  ctx.tasks.interruptResource(nurse1);
+                           let simEvent2 =  ctx.tasks.interruptResource(nurse2);
+                           nurse1.setState(ResourceStates.busy);
+                           nurse2.setState(ResourceStates.busy);
+
+                           let func = function *(data,ctx:Simulation){
+
+                                let simTime = ctx.simTime;
+                                 //The resource goes to lunch
+                                 
+                                 //Walk to the patient                         
+                                 yield *ctx.tasks.walkTo(data.nurse,data.patient.currentStation);
+                                 //Treat the patient
+                                 yield ctx.tasks.delay(data.patient,data.nurse,ctx.data.patientAAcuteDuration);
+                                 yield  ctx.tasks.release(data.patient,data.nurse);     
+                                 //the resource becomes idle
+                                 //worker.nextState = ResourceStates.idle;
+                                 //Continue with the task that was interrupted
+                                 
+                                 if(data.simEvent)
+                                 {
+                                            //The nurse had a task ongoing...walk back to stations
+                                            //where nurse was before the acute incident
+                                                
+                                            let workLeft  = data.simEvent.deliverAt - simTime;
+                                             data.simEvent.deliverAt = ctx.simTime+workLeft;
+                                             //Continue with the task
+                                             yield *ctx.tasks.walkTo(data.nurse,data.stationBefore);
+                                             data.simEvent.deliverAt = ctx.simTime+workLeft;
+                                             ctx.simulator.scheduleEvent(data.simEvent);
+                                 }
+                                 else{
+                                     //Set the resource to idle
+                                     data.nurse.setState(ResourceStates.idle);
+                                     if(!data.nurse.isSeized)
+                                     {
+                                         //Go back to base
+                                         yield *ctx.tasks.walkTo(data.nurse,ctx.data.stations.base);
+                                         if(!data.nurse.isSeized){data.nurse.setState(ResourceStates.idle);}
+                                     }
+                                 }
+                            }
+
+
+                           ctx.tasks.newEvent("nurse1", `treats patient`,func,{simEvent:simEvent1,nurse:nurse1,patient:patientA,stationBefore:nurse1.currentStation});
+
+
+                           ctx.tasks.newEvent("nurse2", `treats patient`,func,{simEvent:simEvent2,nurse:nurse2,patient:patientA,stationBefore:nurse2.currentStation});
+
+
+
+                         
+ 
+                    }
+                }
+
+
+            ],
             plannedEvents:[
                 
                     {
-                        name:"wakeup",
+                        name:"wakeupA",
                         message:"wakeup department A",
                         dist:this.data.wakeUpDepartmentTime,
                         repeatInterval:this.data.wakeUpDepartmentInterval,
@@ -284,7 +360,7 @@ constructor(){
                                 yield *ctx.tasks.walkTo(seizeResult.resource,patient.currentStation);    
 
                             }
-                            yield  ctx.tasks.delay(patient,seizeResult.resource,ctx.data.patientWakeupDuration);
+                            yield  ctx.tasks.delay(patient,seizeResult.resource,ctx.data.patientAWakeupDuration);
                             yield  ctx.tasks.release(patient,seizeResult.resource);     
                             if(!seizeResult.resource.isSeized) 
                             {
@@ -297,7 +373,66 @@ constructor(){
                         }
                     }
             ]
-        }, 
+        }, {
+            type:"patientB",
+            creation:{
+                runOnce:true,
+                quantity:6,
+                createBatch:function*(patients : Entity[],ctx : Simulation){
+                    
+                        ctx.data.patientsB = patients;
+
+                        ctx.data.patientsB[0].room = ctx.data.stations.p7A;
+                        ctx.data.patientsB[1].room = ctx.data.stations.p8A;
+                        ctx.data.patientsB[2].room = ctx.data.stations.p9A;
+                        ctx.data.patientsB[3].room = ctx.data.stations.p10A;
+                        ctx.data.patientsB[4].room = ctx.data.stations.p11A;
+                        ctx.data.patientsB[5].room = ctx.data.stations.p12A;
+                        
+                        ctx.data.patientsB[0].currentStation = ctx.data.stations.p7A;
+                        ctx.data.patientsB[1].currentStation = ctx.data.stations.p8A;
+                        ctx.data.patientsB[2].currentStation = ctx.data.stations.p9A;
+                        ctx.data.patientsB[3].currentStation = ctx.data.stations.p10A;
+                        ctx.data.patientsB[4].currentStation = ctx.data.stations.p11A;
+                        ctx.data.patientsB[5].currentStation = ctx.data.stations.p12A;
+                }    
+            },
+            plannedEvents:[
+                
+                    {
+                        name:"wakeupB",
+                        message:"wakeup department A",
+                        dist:this.data.wakeUpDepartmentTime,
+                        repeatInterval:this.data.wakeUpDepartmentInterval,
+                        action: function* (patient : Entity,ctx : Simulation){
+                        
+    
+                        
+                            yield  ctx.tasks.enqueue(patient,ctx.queue("nursesQueue"));
+        let seizeResult   = yield  ctx.tasks.seizeOneFromManyResources(patient,ctx.data.nursesDepA);
+                            yield *ctx.tasks.dequeue(patient,ctx.queue("nursesQueue"));
+                            yield *ctx.tasks.walkTo(seizeResult.resource,patient.currentStation);
+                            if(ctx.tasks.yesNo(ctx.data.patientBNeedsMedicine))
+                            {
+                                yield *ctx.tasks.walkTo(seizeResult.resource,ctx.data.stations.medicine);  
+                                yield ctx.tasks.delayResource(seizeResult.resource,ctx.data.nurseFindMedicineDuration,ResourceStates.busy)
+                                yield *ctx.tasks.walkTo(seizeResult.resource,patient.currentStation);    
+
+                            }
+                            yield  ctx.tasks.delay(patient,seizeResult.resource,ctx.data.patientBWakeupDuration);
+                            yield  ctx.tasks.release(patient,seizeResult.resource);     
+                            if(!seizeResult.resource.isSeized) 
+                            {
+                                yield *ctx.tasks.walkTo(seizeResult.resource,ctx.data.stations.base);
+                                    seizeResult.resource.setState();
+                            }
+                               
+                      
+                    
+                        }
+                    }
+            ]
+        },
         {
             type:"nurse",
             isResource:true,
@@ -313,10 +448,98 @@ constructor(){
                 
                 }
             }
-        }
+        },
+        {
+            type:"aukraheimen",
+            creation:{
+                runOnce:true
+            },
+            plannedEvents:[
+                
+                    {
+                        name:"startOfDay",
+                        message:"startOfDay",
+                        dist:this.data.wakeUpDepartmentTime,
+                        repeatInterval:{unit:Units.Hour, value:this.data.hoursPerDay},
+                        action: function* (aukreheimen : Entity,ctx : Simulation){
+                        
+                            ctx.data.patientsA.forEach((patient:Entity)=>{
+                                ctx.recorder.startRecordEntityStats(patient,"waitTime");
+                            })
+                        
+                            ctx.data.patientsB.forEach((patient:Entity)=>{
+                                ctx.recorder.startRecordEntityStats(patient,"waitTime");
+                            })
+
+                            
+                            ctx.data.nursesDepA.forEach((nurse:Resource)=>{
+                                ctx.recorder.startRecordResourceStats(nurse,"idleTime");
+                                ctx.recorder.startRecordResourceStats(nurse,"busyTime");
+                                ctx.recorder.startRecordResourceStats(nurse,"transferTime");
+                            })
+                               
+                      
+                    
+                        }
+                    },
+                    {
+                       name:"endOfDay",
+                       message:"endOfDay",
+                       dist:{unit:Units.Hour, value:this.data.hoursPerDay-Simulation.epsilon},
+                       repeatInterval:{unit:Units.Hour, value:this.data.hoursPerDay},
+                       action: function* (aukreheimen : Entity,ctx : Simulation){
+
+                           let totalWaitTime = 0;
+                           ctx.data.patientsA.forEach((patient:Entity)=>{
+                             totalWaitTime+=  ctx.recorder.endRecordEntityStats(patient,"waitTime").waitTime;
+                           });
+
+
+  
+                           ctx.data.patientsB.forEach((patient:Entity)=>{
+                               totalWaitTime+=  ctx.recorder.endRecordEntityStats(patient,"waitTime").waitTime;
+                          });
+
+
+                           let average = totalWaitTime / (ctx.data.patientsB.length+ctx.data.patientsA.length);
+
+                           ctx.variables.patientsAverageWaitTime = (ctx.variables.patientsAverageWaitTime*ctx.variables.noLog.daysCount + average)/(ctx.variables.noLog.daysCount+1);
+                       
+
+
+
+                           let totalIdleTime = 0;
+                           let totalBusyTime = 0;
+                           let totalTransferTime = 0;
+
+                            ctx.data.nursesDepA.forEach((nurse:Resource)=>{
+                               totalIdleTime+= ctx.recorder.endRecordResourceStats(nurse,"idleTime",false).idleTime;
+                                totalBusyTime+=ctx.recorder.endRecordResourceStats(nurse,"busyTime",false).busyTime;
+                                totalTransferTime+=ctx.recorder.endRecordResourceStats(nurse,"transferTime").transferTime;
+                            })
+                               
+
+                           let averageIdle = totalIdleTime / (ctx.data.nursesDepA.length);
+
+                           let averageBusy = totalBusyTime / (ctx.data.nursesDepA.length);
+
+                           let averageTransfer = totalTransferTime / (ctx.data.nursesDepA.length);
+
+
+                            ctx.variables.nursesAverageIdleTime = (ctx.variables.nursesAverageIdleTime*ctx.variables.noLog.daysCount + averageIdle)/(ctx.variables.noLog.daysCount+1);
+                            ctx.variables.nursesAverageBusyTime = (ctx.variables.nursesAverageBusyTime*ctx.variables.noLog.daysCount + averageBusy)/(ctx.variables.noLog.daysCount+1);
+                            ctx.variables.nursesAverageTransferTime = (ctx.variables.nursesAverageTransferTime*ctx.variables.noLog.daysCount + averageTransfer)/(ctx.variables.noLog.daysCount+1);
+                       
+
+                           ctx.variables.noLog.daysCount++;
+
+                      }
+                    
+                    }
+            ]
 
         
-
+        }
 
     ];
 }
@@ -343,10 +566,10 @@ getPreferences() {
 
     return {
         seed:1234,
-        simTime:200,
+        simTime:40,
         baseUnit:Units.Day,
         useLogging:true,
-        hoursPerDay:1
+        hoursPerDay:this.data.hoursPerDay
     }
 
 

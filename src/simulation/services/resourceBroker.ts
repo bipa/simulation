@@ -128,6 +128,71 @@ export class ResourceBroker{
         });
      }
 
+
+forceSeize(entity:Entity,resources:Resource[],quantity:number=1){
+
+            //First try find idle resources
+            let countFound = 0;
+            let forcedResources = [];
+
+            if(entity.seizedResources.length>0){
+                //Already seized, so use these
+
+                for(let resource of entity.seizedResources[Symbol.iterator]()){
+                    
+                    if(quantity<countFound){
+                        countFound++;
+                        forcedResources.push(resource);
+                        resource.unSeizeAll(ResourceStates.busy);
+                        entity.seizeResource(resource);
+                    }else{
+                        //the resource is set to idle
+                        //Should in principle go to base
+                        entity.releaseResource(resource);
+                    } 
+                } 
+                
+                if(quantity==countFound){
+                        return forcedResources;
+                }
+
+            }
+            
+            for(let resource of resources[Symbol.iterator]()){
+                if(!resource.isSeized)
+                {
+                    countFound++;
+                    resource.unSeizeAll(ResourceStates.busy);
+                    forcedResources.push(resource);
+                    entity.seizeResource(resource);
+                    if(quantity==countFound){
+                        
+                        return forcedResources;
+                    } 
+                }
+            }
+
+            //Then pick first available seized resource
+            for(let resource of resources[Symbol.iterator]()){
+                if(resource.isSeized)
+                {
+                    countFound++;
+                    resource.unSeizeAll(ResourceStates.busy);
+                    forcedResources.push(resource);
+                    entity.seizeResource(resource);
+                    if(quantity==countFound) {
+
+                        return forcedResources;
+                    }
+                }
+            }
+
+            throw new Error("Couldnt force enough resources");
+}
+
+
+
+
 idleResources(request : ResourceRequest,resources : Resource[] = null) : Resource[]{
 
     if(resources){

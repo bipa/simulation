@@ -39,7 +39,7 @@ constructor(){
 
     let variables : any                         = {}; //don't remove this line - declaration
     variables.kpi                      = {}; //don't remove this line - declaration
-    variables.kpi.queueLength = 0;
+   
     variables.existing = [
         {type:"part",variable:ExistingVariables.entityTotalWaitTimePercentage,name:"partTotalWaitTimePercentage",display:"Part ventetid %"},
         {type:"part",variable:ExistingVariables.entityTotalValueAddedTimePercentage,name:"partTotalValueAddedTimePercentage",display:"Part VA tid %"},
